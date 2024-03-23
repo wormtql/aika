@@ -25,6 +25,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "aika_spatial_structure"
+version = "0.1.0"
+dependencies = [
+ "aika_math",
+ "anyhow",
+ "cgmath",
+ "num-derive",
+ "num-traits",
+ "smallvec",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"

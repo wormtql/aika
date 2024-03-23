@@ -2,7 +2,7 @@ use std::fmt::Display;
 use cgmath::{BaseFloat, Matrix4, Vector3, Vector4};
 use num_traits::{Float, Num, One, Zero};
 
-use crate::{HitRecord, Hittable, Ray, Transformable};
+use crate::{BoundingVolume, HaveCenter, HitRecord, Hittable, Ray, Transformable};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AABB<T> {
@@ -126,17 +126,19 @@ impl<T> Transformable<T> for AABB<T> where T: BaseFloat {
     }
 }
 
-impl<T> Hittable<T> for AABB<T> where T: BaseFloat + Display {
-    fn hit(&self, ray: &Ray<T>, min: T, max: T) -> Option<HitRecord<T>> {
-        let mut t_x_min: T;
-        let mut t_x_max: T;
+impl<F> Hittable for AABB<F> where F: BaseFloat {
+    type FloatType = F;
+
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F>> {
+        let mut t_x_min: F;
+        let mut t_x_max: F;
 
         let bb_max = self.max();
         let bb_min = self.min();
 
-        if ray.direction.x == T::zero() {
-            t_x_min = T::neg_infinity();
-            t_x_max = T::infinity();
+        if ray.direction.x == F::zero() {
+            t_x_min = F::neg_infinity();
+            t_x_max = F::infinity();
         } else {
             t_x_min = (bb_min.x - ray.origin.x) / ray.direction.x;
             t_x_max = (bb_max.x - ray.origin.x) / ray.direction.x;
@@ -147,11 +149,11 @@ impl<T> Hittable<T> for AABB<T> where T: BaseFloat + Display {
             }
         }
 
-        let mut t_y_min: T;
-        let mut t_y_max: T;
-        if ray.direction.y == T::zero() {
-            t_y_min = T::neg_infinity();
-            t_y_max = T::infinity();
+        let mut t_y_min: F;
+        let mut t_y_max: F;
+        if ray.direction.y == F::zero() {
+            t_y_min = F::neg_infinity();
+            t_y_max = F::infinity();
         } else {
             t_y_min = (bb_min.y - ray.origin.y) / ray.direction.y;
             t_y_max = (bb_max.y - ray.origin.y) / ray.direction.y;
@@ -162,11 +164,11 @@ impl<T> Hittable<T> for AABB<T> where T: BaseFloat + Display {
             }
         }
 
-        let mut t_z_min: T;
-        let mut t_z_max: T;
-        if ray.direction.z == T::zero() {
-            t_z_min = T::neg_infinity();
-            t_z_max = T::infinity();
+        let mut t_z_min: F;
+        let mut t_z_max: F;
+        if ray.direction.z == F::zero() {
+            t_z_min = F::neg_infinity();
+            t_z_max = F::infinity();
         } else {
             t_z_min = (bb_min.z - ray.origin.z) / ray.direction.z;
             t_z_max = (bb_max.z - ray.origin.z) / ray.direction.z;
@@ -199,6 +201,20 @@ impl<T> Hittable<T> for AABB<T> where T: BaseFloat + Display {
         } else {
             None
         }
+    }
+}
+
+impl<F> HaveCenter for AABB<F> where F: Copy {
+    type FloatType = F;
+
+    fn get_center(&self) -> Vector3<F> {
+        self.center
+    }
+}
+
+impl<F> BoundingVolume for AABB<F> where F: BaseFloat {
+    fn merge(&self, other: &Self) -> Self {
+        self.union(other)
     }
 }
 

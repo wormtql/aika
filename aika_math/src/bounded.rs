@@ -1,5 +1,10 @@
 use crate::aabb::AABB;
+use crate::Hittable;
 
-pub trait HaveAABB<T> {
-    fn get_aabb(&self) -> AABB<T>;
+pub trait Bounded<B> {
+    fn get_bv(&self) -> B;
+}
+
+pub trait BoundingVolume: Hittable {
+    fn merge(&self, other: &Self) -> Self;
 }
