@@ -5,7 +5,7 @@ use crate::bvh::heuristic::BVHNaiveHeuristic;
 use crate::bvh::traits::{BVHGeometry, BVHSplit, BVHSplitHeuristic};
 use crate::common::axis::Axis;
 use crate::common::types::{PointType, PrecisionType};
-use crate::geometry::bounding_box::BoundingBox;
+use crate::geometry::aabb::AABB;
 use crate::geometry::hittable::{HitRecord, Hittable};
 use crate::geometry::ray::Ray;
 use crate::geometry::traits::{Bounded, Geometry};
@@ -15,7 +15,7 @@ pub struct BVHNode<T> {
     pub right: Option<Rc<RefCell<BVHNode<T>>>>,
     pub objects: Vec<Rc<dyn BVHGeometry<T>>>,
 
-    pub bounding_box: BoundingBox,
+    pub bounding_box: AABB,
 }
 
 impl<T> BVHNode<T> {
@@ -23,7 +23,7 @@ impl<T> BVHNode<T> {
         self.left.is_none() && self.right.is_none()
     }
 
-    pub fn get_bound(&self) -> BoundingBox {
+    pub fn get_bound(&self) -> AABB {
         if self.left.is_some() && self.right.is_some() {
             let bb1 = &self.left.as_ref().unwrap().borrow().bounding_box;
             let bb2 = &self.right.as_ref().unwrap().borrow().bounding_box;
@@ -33,7 +33,7 @@ impl<T> BVHNode<T> {
         } else if self.left.is_none() && self.right.is_some() {
             self.right.as_ref().unwrap().borrow().bounding_box.clone()
         } else {
-            let mut bb = BoundingBox::zero();
+            let mut bb = AABB::zero();
             for item in self.objects.iter() {
                 let item_bb = item.bound();
                 bb = bb.union(&item_bb);
@@ -120,7 +120,7 @@ impl<T> BVHBuilder<T> {
                 left: None,
                 right: None,
                 objects: objects.iter().map(|x| x.0.clone()).collect(),
-                bounding_box: BoundingBox::zero(),
+                bounding_box: AABB::zero(),
             };
             node.update_bound();
             return Rc::new(RefCell::new(node));
@@ -142,7 +142,7 @@ impl<T> BVHBuilder<T> {
             left: Some(left_node),
             right: Some(right_node),
             objects: Vec::new(),
-            bounding_box: BoundingBox::zero(),
+            bounding_box: AABB::zero(),
         };
         node.update_bound();
         Rc::new(RefCell::new(node))
@@ -176,7 +176,7 @@ impl<T> Hittable<T> for BVHNode<T> {
 }
 
 impl<T> Bounded for BVHNode<T> {
-    fn bound(&self) -> BoundingBox {
+    fn bound(&self) -> AABB {
         self.bounding_box.clone()
     }
 }
@@ -186,7 +186,7 @@ pub struct BVHTree<T> {
 }
 
 impl<T> Bounded for BVHTree<T> {
-    fn bound(&self) -> BoundingBox {
+    fn bound(&self) -> AABB {
         self.root.borrow().bounding_box.clone()
     }
 }
@@ -203,7 +203,7 @@ mod test {
     use cgmath::{InnerSpace, Vector3};
     use crate::bvh::bvh::BVHBuilder;
     use crate::common::types::PrecisionType;
-    use crate::geometry::bounding_box::BoundingBox;
+    use crate::geometry::aabb::AABB;
     use crate::geometry::geometries::ball::Ball;
     use crate::geometry::hittable::Hittable;
     use crate::geometry::ray::Ray;
@@ -223,7 +223,7 @@ mod test {
             direction: Vector3 { x: 1.0, y: 1.0, z: 1.0 }.normalize(),
         };
 
-        assert_eq!(tree.root.borrow().bounding_box, BoundingBox {
+        assert_eq!(tree.root.borrow().bounding_box, AABB {
             x_low: -1.0,
             x_high: 1.0,
             y_low: -1.0,
@@ -254,7 +254,7 @@ mod test {
             direction: Vector3 { x: 1.0, y: 1.0, z: 1.0 }.normalize(),
         };
 
-        assert_eq!(tree.root.borrow().bounding_box, BoundingBox {
+        assert_eq!(tree.root.borrow().bounding_box, AABB {
             x_low: -1.0,
             x_high: 1.0,
             y_low: -1.0,
@@ -282,7 +282,7 @@ mod test {
             direction: Vector3 { x: -1.0, y: -1.0, z: -1.0 }.normalize(),
         };
 
-        assert_eq!(tree.root.borrow().bounding_box, BoundingBox {
+        assert_eq!(tree.root.borrow().bounding_box, AABB {
             x_low: -1.0,
             x_high: 1.0,
             y_low: -1.0,

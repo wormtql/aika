@@ -2,10 +2,10 @@ use std::rc::Rc;
 use cgmath::{InnerSpace, Matrix4, Vector3, SquareMatrix};
 use crate::bvh::traits::{BVHGeometry, BVHSplit};
 use crate::common::types::{PointType, PrecisionType};
-use crate::geometry::bounding_box::BoundingBox;
-use crate::geometry::hittable::{GeometryHitRecordData, HitRecord, Hittable};
+use crate::geometry::aabb::AABB;
+use crate::geometry::hittable::{PathTracingHitRecordData, HitRecord, Hittable};
 use crate::geometry::ray::Ray;
-use crate::geometry::traits::{Bounded};
+use crate::geometry::traits::{Bounded, Geometry};
 
 pub struct Ball {
     pub center: PointType,
@@ -25,8 +25,8 @@ impl Ball {
 }
 
 impl Bounded for Ball {
-    fn bound(&self) -> BoundingBox {
-        BoundingBox {
+    fn bound(&self) -> AABB {
+        AABB {
             x_low: self.center.x - self.radius,
             x_high: self.center.x + self.radius,
             y_low: self.center.y - self.radius,
@@ -37,8 +37,8 @@ impl Bounded for Ball {
     }
 }
 
-impl Hittable<GeometryHitRecordData> for Ball {
-    fn hit(self: Rc<Self>, ray: &Ray) -> Option<HitRecord<GeometryHitRecordData>> {
+impl Hittable<PathTracingHitRecordData> for Ball {
+    fn hit(self: Rc<Self>, ray: &Ray) -> Option<HitRecord<PathTracingHitRecordData>> {
         let temp = ray.origin - self.center;
 
         let a = 1.0 as PrecisionType;
@@ -70,7 +70,7 @@ impl Hittable<GeometryHitRecordData> for Ball {
             Some(HitRecord {
                 t,
                 hit_object: self.clone(),
-                data: GeometryHitRecordData {
+                data: PathTracingHitRecordData {
                     normal,
                 }
             })
@@ -120,11 +120,15 @@ impl BVHGeometry<()> for Ball {
     }
 }
 
-impl BVHGeometry<GeometryHitRecordData> for Ball {
+impl BVHGeometry<PathTracingHitRecordData> for Ball {
     fn get_center_heuristic(&self) -> Vector3<PrecisionType> {
         self.center
     }
 }
+
+impl Geometry<()> for Ball {}
+
+impl Geometry<PathTracingHitRecordData> for Ball {}
 
 // impl BVHSplit<()> for Ball {
 //     fn split(self: Rc<Self>) -> Vec<Rc<dyn BVHGeometry<()>>> {

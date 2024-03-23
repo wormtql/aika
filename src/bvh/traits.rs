@@ -25,3 +25,8 @@ pub trait BVHSplitHeuristic<HitData> {
 
     fn next(&self) -> Box<dyn BVHSplitHeuristic<HitData>>;
 }
+
+pub enum BVH<HitData> {
+    Split(Rc<dyn BVHSplit<HitData>>),
+    Atomic(Rc<dyn BVHGeometry<HitData>>)
+}

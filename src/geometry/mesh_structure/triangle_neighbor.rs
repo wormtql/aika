@@ -2,7 +2,7 @@ use std::rc::Rc;
 use crate::bvh::traits::{BVHGeometry, BVHSplit};
 use crate::common::types::PointType;
 use crate::geometry::geometries::triangle::Triangle;
-use crate::geometry::hittable::GeometryHitRecordData;
+use crate::geometry::hittable::PathTracingHitRecordData;
 use crate::geometry::mesh_structure::mesh_structre_traits::{CommonMesh, FaceCount, VertexCount};
 use crate::geometry::vertex::Vertex;
 
@@ -60,9 +60,9 @@ impl<VertexData: Clone + 'static> BVHSplit<()> for MeshStructureTriangleNeighbor
     }
 }
 
-impl<VertexData: Clone + 'static> BVHSplit<GeometryHitRecordData> for MeshStructureTriangleNeighbor<VertexData> {
-    fn split(self: Rc<Self>) -> Vec<Rc<dyn BVHGeometry<GeometryHitRecordData>>> {
-        let mut result: Vec<Rc<dyn BVHGeometry<GeometryHitRecordData>>> = Vec::new();
+impl<VertexData: Clone + 'static> BVHSplit<PathTracingHitRecordData> for MeshStructureTriangleNeighbor<VertexData> {
+    fn split(self: Rc<Self>) -> Vec<Rc<dyn BVHGeometry<PathTracingHitRecordData>>> {
+        let mut result: Vec<Rc<dyn BVHGeometry<PathTracingHitRecordData>>> = Vec::new();
 
         for tri in self.triangles.iter() {
             let a_index = tri[0];

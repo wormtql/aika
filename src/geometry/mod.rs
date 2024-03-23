@@ -1,8 +1,12 @@
 pub mod traits;
-pub mod bounding_box;
+pub mod aabb;
 pub mod ray;
 pub mod geometries;
 pub mod mesh_structure;
 pub mod hittable;
-pub mod transform;
+pub mod transformable;
 pub mod vertex;
+pub mod sub_geometry;
+pub mod geometry;
+mod triangle;
+mod bounded;
