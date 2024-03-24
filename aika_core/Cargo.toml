@@ -1,5 +1,5 @@
 [package]
-name = "aika"
+name = "aika_core"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,11 +11,4 @@ smallvec = "1.10.0"
 num-traits = "0.2"
 num-derive = "0.4.2"
 anyhow = "1.0"
-
-[workspace]
-members = [
-    "aika_math",
-    "aika_spatial_structure",
-    "aika_scene",
-    "aika_core",
-]
+rand = "0.8.5"
