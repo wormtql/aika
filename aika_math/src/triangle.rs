@@ -1,7 +1,7 @@
 use cgmath::{BaseFloat, InnerSpace, Vector3};
 use num_traits::Float;
 
-use crate::{AABB, Bounded, HitRecord, Hittable, Ray};
+use crate::{AABB, Bounded, HaveCenter, HitRecord, Hittable, Ray};
 
 pub struct Triangle<T> {
     pub a: Vector3<T>,
@@ -58,6 +58,15 @@ impl<F> Hittable for Triangle<F> where F: BaseFloat {
         } else {
             None
         }
+    }
+}
+
+impl<F> HaveCenter for Triangle<F> where F: BaseFloat {
+    type FloatType = F;
+
+    fn get_center(&self) -> Vector3<Self::FloatType> {
+        let three = F::from(3.0).unwrap();
+        (self.a + self.b + self.c) / three
     }
 }
 

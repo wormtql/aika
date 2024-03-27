@@ -40,11 +40,10 @@ where
     type FloatType = F;
 
     fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F>> {
-        let mut min = min;
-        if self.hit_bv(ray, min, max).is_none() {
+        let hit_bv_result = self.hit_bv(ray, min, max);
+        if hit_bv_result.is_none() {
             return None;
         }
-        println!("{}", 123);
 
         let mut max = max;
         let mut hr = HitRecord::new();

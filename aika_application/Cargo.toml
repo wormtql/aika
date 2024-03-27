@@ -1,21 +1,11 @@
 [package]
-name = "aika"
+name = "aika_application"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+aika_core = { path = "../aika_core" }
 cgmath = { version = "0.18.0", features=["swizzle"] }
-smallvec = "1.10.0"
-num-traits = "0.2"
-num-derive = "0.4.2"
 anyhow = "1.0"
-
-[workspace]
-members = [
-    "aika_math",
-    "aika_spatial_structure",
-    "aika_core",
-    "aika_application",
-]

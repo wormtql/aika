@@ -13,7 +13,7 @@ impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat {
         self.albedo / pi
     }
 
-    fn importance_sample(&self, in_dir: Vector3<F>) -> (Vector3<F>, F) where F: BaseFloat {
+    fn importance_sample(&self, _in_dir: Vector3<F>) -> (Vector3<F>, F) where F: BaseFloat {
         let mut r = thread_rng();
         let a = F::from(r.gen_range(0.0..1.0)).unwrap();
         let b = F::from(r.gen_range(0.0..1.0)).unwrap();

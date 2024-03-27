@@ -184,7 +184,7 @@ impl<F> Hittable for AABB<F> where F: BaseFloat {
         let interval_min2 = interval_min.max(min);
         let interval_max2 = interval_max.min(max);
 
-        if interval_min2 < interval_max2 {
+        if interval_min2 <= interval_max2 {
             let t;
             if interval_min >= interval_min2 {
                 t = interval_min;

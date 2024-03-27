@@ -2,7 +2,7 @@ use cgmath::{BaseFloat, Vector3};
 
 use crate::Ray;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct HitRecord<T> {
     pub t: T,
     pub normal: Option<Vector3<T>>,

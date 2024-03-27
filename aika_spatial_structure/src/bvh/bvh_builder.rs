@@ -24,6 +24,12 @@ impl<G, B> BVHBuilder<B, G> {
     pub fn add_object(&mut self, obj: Rc<G>) {
         self.objects.push(obj);
     }
+
+    pub fn add_objects(&mut self, obj: &[Rc<G>]) {
+        for item in obj.iter() {
+            self.objects.push(item.clone());
+        }
+    }
 }
 
 impl<B, G, F> BVHBuilder<B, G>

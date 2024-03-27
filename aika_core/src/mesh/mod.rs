@@ -1,4 +1,4 @@
-pub use mesh::{Mesh, DynMesh};
+pub use mesh::{Mesh, DynMesh, MeshTrianglesIterator};
 pub use sub_mesh::SubMesh;
 pub use vertex::{VertexBuffer, CommonVertex, BoxDynVertexBuffer};
 pub use simple_mesh::*;

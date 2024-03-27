@@ -80,26 +80,26 @@ impl<F> VertexBuffer for BoxDynVertexBuffer<F> {
     type FloatType = F;
 
     fn get_position(&self, index: usize) -> Vector3<Self::FloatType> {
-        self.get_position(index)
+        self.as_ref().get_position(index)
     }
 
     fn get_normal(&self, index: usize) -> Option<Vector3<Self::FloatType>> {
-        self.get_normal(index)
+        self.as_ref().get_normal(index)
     }
 
     fn get_uv0(&self, index: usize) -> Option<Vector2<Self::FloatType>> {
-        self.get_uv0(index)
+        self.as_ref().get_uv0(index)
     }
 
     fn get_uv1(&self, index: usize) -> Option<Vector2<Self::FloatType>> {
-        self.get_uv1(index)
+        self.as_ref().get_uv1(index)
     }
 
     fn get_tangent(&self, index: usize) -> Option<Vector3<Self::FloatType>> {
-        self.get_tangent(index)
+        self.as_ref().get_tangent(index)
     }
 
     fn get_color(&self, index: usize) -> Option<Vector3<Self::FloatType>> {
-        self.get_color(index)
+        self.as_ref().get_color(index)
     }
 }

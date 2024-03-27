@@ -6,9 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+aika_math = { path = "../aika_math" }
+aika_spatial_structure = { path = "../aika_spatial_structure" }
 cgmath = { version = "0.18.0", features=["swizzle"] }
 smallvec = "1.10.0"
 num-traits = "0.2"
 num-derive = "0.4.2"
 anyhow = "1.0"
 rand = "0.8.5"
+image = "0.25.0"
+tobj = { version = "4.0", features = ["merging"] }

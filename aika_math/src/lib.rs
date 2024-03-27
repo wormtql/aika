@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 pub use aabb::AABB;
 pub use bounded::{Bounded, BoundingVolume};
 pub use hittable::{HitRecord, Hittable};
@@ -17,3 +19,4 @@ mod ray;
 mod sphere;
 mod axis;
 mod have_center;
+mod vector_ext;
