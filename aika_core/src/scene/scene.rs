@@ -1,3 +1,5 @@
+use std::any::Any;
+use std::cell::RefCell;
 use std::rc::Rc;
 use cgmath::BaseFloat;
 use crate::mesh::VertexBuffer;
@@ -5,11 +7,11 @@ use crate::scene::GameObject;
 
 // todo more complicated management
 pub struct Scene<F> {
-    pub game_objects: Vec<Rc<GameObject<F>>>
+    pub game_objects: Vec<Rc<RefCell<GameObject<F>>>>,
 }
 
 impl<F> Scene<F> where F: BaseFloat {
-    pub fn add_game_object(&mut self, go: Rc<GameObject<F>>) {
+    pub fn add_game_object(&mut self, go: Rc<RefCell<GameObject<F>>>) {
         self.game_objects.push(go);
     }
 
@@ -25,5 +27,16 @@ impl<F> Scene<F> where F: BaseFloat {
     /// the cube is right on the plane, thus have center position (0, 0, 0.5)
     pub fn new_plane_and_cube() -> Self {
         todo!()
+    }
+
+    pub fn get_game_objects_of_type<C: Any>(&self) -> Vec<Rc<RefCell<GameObject<F>>>> {
+        let mut ret = Vec::new();
+        for go in self.game_objects.iter() {
+            if GameObject::has_component::<C>(go.clone()) {
+                ret.push(go.clone());
+            }
+        }
+
+        ret
     }
 }

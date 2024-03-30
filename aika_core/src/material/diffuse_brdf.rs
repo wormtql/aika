@@ -1,10 +1,19 @@
 use std::f64::consts::PI;
 use cgmath::{BaseFloat, Vector3};
 use rand::{Rng, thread_rng};
-use crate::bsdf::BSDF;
+use aika_math::Ray;
 
 pub struct DiffuseBRDF<F> {
     pub albedo: Vector3<F>,
+
+    pub normal: Vector3<F>,
+    pub
+}
+
+impl<F> RaySampler<F> for DiffuseBRDF<F> where F: BaseFloat {
+    fn sample_ray(&self, ray: &Ray<F>) -> (F, Ray<F>) {
+
+    }
 }
 
 impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat {

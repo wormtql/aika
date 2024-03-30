@@ -1,5 +1,6 @@
 use cgmath::{BaseFloat, Matrix4, Quaternion, Rotation, Vector3};
 use num_traits::{Zero};
+use crate::component::Component;
 
 pub struct Transform<F> {
     pub position: Vector3<F>,
