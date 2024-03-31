@@ -1,4 +1,4 @@
-pub use component::Component;
+pub use component::{ComponentData, Component};
 pub use transform::Transform;
 pub use mesh_filter::MeshFilter;
 

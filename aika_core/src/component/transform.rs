@@ -1,6 +1,6 @@
 use cgmath::{BaseFloat, Matrix4, Quaternion, Rotation, Vector3};
 use num_traits::{Zero};
-use crate::component::Component;
+use crate::component::{ComponentData};
 
 pub struct Transform<F> {
     pub position: Vector3<F>,
@@ -41,3 +41,5 @@ impl<F> Transform<F> where F: BaseFloat {
         self.rotation.rotate_vector(dir)
     }
 }
+
+impl<F> ComponentData for Transform<F> where F: BaseFloat + 'static {}

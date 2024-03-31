@@ -4,7 +4,8 @@ use image::{Rgb, RgbImage};
 use num_traits::Num;
 use aika_math::{Hittable, Ray};
 use crate::camera::PerspectiveCamera;
-use crate::scene::{Scene, Transform};
+use crate::component::Transform;
+use crate::scene::{Scene};
 use crate::mashed_scene::MashedScene;
 
 pub struct SimplePathTracing<F> {
@@ -15,7 +16,7 @@ fn float_to_u8<F>(f: F) -> u8 where F: BaseFloat {
     f.to_u8().unwrap()
 }
 
-impl<F> SimplePathTracing<F> where F: BaseFloat {
+impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
     pub fn trace_one_ray(mashed_scene: &MashedScene<F>, ray: &Ray<F>) -> Rgb<u8> {
         let hit_result = mashed_scene.bvh.hit(ray, F::zero(), F::infinity());
         if hit_result.is_some() {

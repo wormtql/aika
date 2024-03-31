@@ -2,27 +2,19 @@ use std::f64::consts::PI;
 use cgmath::{BaseFloat, Vector3};
 use rand::{Rng, thread_rng};
 use aika_math::Ray;
+use crate::material::surface_material::SurfaceMaterial;
 
 pub struct DiffuseBRDF<F> {
     pub albedo: Vector3<F>,
-
-    pub normal: Vector3<F>,
-    pub
 }
 
-impl<F> RaySampler<F> for DiffuseBRDF<F> where F: BaseFloat {
-    fn sample_ray(&self, ray: &Ray<F>) -> (F, Ray<F>) {
-
-    }
-}
-
-impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat {
-    fn evaluate(&self, _in_dir: Vector3<F>, _out_dir: Vector3<F>) -> Vector3<F> {
+impl<F> SurfaceMaterial<F> for DiffuseBRDF<F> where F: BaseFloat {
+    fn bsdf(&self, _light_dir: Vector3<F>, _view_dir: Vector3<F>) -> Vector3<F> {
         let pi = F::from(PI).unwrap();
         self.albedo / pi
     }
 
-    fn importance_sample(&self, _in_dir: Vector3<F>) -> (Vector3<F>, F) where F: BaseFloat {
+    fn sample_ray(&self, _current_dir: Vector3<F>) -> (F, Vector3<F>) {
         let mut r = thread_rng();
         let a = F::from(r.gen_range(0.0..1.0)).unwrap();
         let b = F::from(r.gen_range(0.0..1.0)).unwrap();
@@ -35,6 +27,6 @@ impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat {
 
         let dir = Vector3::new(sin_theta * cos_phi, sin_theta * sin_phi, cos_phi);
 
-        (dir, F::one() / pi2)
+        (F::one() / pi2, dir)
     }
 }

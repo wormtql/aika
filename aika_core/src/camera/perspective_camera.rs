@@ -1,7 +1,7 @@
 use cgmath::{BaseFloat, Matrix4, Rad, Vector3};
 use num_traits::Zero;
 use aika_math::Ray;
-use crate::scene::Transform;
+use crate::component::Transform;
 
 /// we assume, initial, the camera is looking at (0, 0, -1), with right hand coordinate system
 pub struct PerspectiveCamera<F> {

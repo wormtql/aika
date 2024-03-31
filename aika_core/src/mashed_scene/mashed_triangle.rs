@@ -1,10 +1,10 @@
 use std::rc::Rc;
 use cgmath::{BaseFloat, Vector3};
 use aika_math::{AABB, Bounded, HaveCenter, HitRecord, Hittable, Ray, Triangle};
-use crate::scene::GameObject;
+use crate::scene::{GameObject};
 
 pub struct MashedTriangle<F> {
-    pub go: Rc<GameObject<F>>,
+    pub go: GameObject<F>,
     pub triangle: Triangle<F>,
     pub vertex_index: [usize; 3],
 }

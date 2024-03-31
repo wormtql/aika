@@ -2,16 +2,17 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::rc::Rc;
 use cgmath::BaseFloat;
+use crate::component::ComponentData;
 use crate::mesh::VertexBuffer;
-use crate::scene::GameObject;
+use crate::scene::{GameObject, GameObjectInternal};
 
 // todo more complicated management
 pub struct Scene<F> {
-    pub game_objects: Vec<Rc<RefCell<GameObject<F>>>>,
+    pub game_objects: Vec<GameObject<F>>,
 }
 
 impl<F> Scene<F> where F: BaseFloat {
-    pub fn add_game_object(&mut self, go: Rc<RefCell<GameObject<F>>>) {
+    pub fn add_game_object(&mut self, go: GameObject<F>) {
         self.game_objects.push(go);
     }
 
@@ -29,10 +30,10 @@ impl<F> Scene<F> where F: BaseFloat {
         todo!()
     }
 
-    pub fn get_game_objects_of_type<C: Any>(&self) -> Vec<Rc<RefCell<GameObject<F>>>> {
+    pub fn get_game_objects_of_type<C: ComponentData>(&self) -> Vec<GameObject<F>> {
         let mut ret = Vec::new();
         for go in self.game_objects.iter() {
-            if GameObject::has_component::<C>(go.clone()) {
+            if go.has_component::<C>() {
                 ret.push(go.clone());
             }
         }
