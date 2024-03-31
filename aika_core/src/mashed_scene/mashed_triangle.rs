@@ -17,9 +17,18 @@ impl<F> Bounded<AABB<F>> for MashedTriangle<F> where F: BaseFloat {
 
 impl<F> Hittable for MashedTriangle<F> where F: BaseFloat {
     type FloatType = F;
+    type HitObjectType = GameObject<F>;
 
-    fn hit(&self, ray: &Ray<Self::FloatType>, min: Self::FloatType, max: Self::FloatType) -> Option<HitRecord<Self::FloatType>> {
-        self.triangle.hit(ray, min, max)
+    fn hit(&self, ray: &Ray<Self::FloatType>, min: Self::FloatType, max: Self::FloatType) -> Option<HitRecord<Self::FloatType, Self::HitObjectType>> {
+        let hit_result = self.triangle.hit(ray, min, max);
+        if let Some(r) = hit_result {
+            let mut ret = HitRecord::new();
+            r.copy_except_hit_object(&mut ret);
+            ret.hit_object = Some(self.go.clone());
+            Some(ret)
+        } else {
+            None
+        }
     }
 }
 

@@ -1,5 +1,5 @@
 use std::any::Any;
-use std::cell::{Ref, RefCell};
+use std::cell::{Ref, RefCell, RefMut};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::rc::{Rc, Weak};
@@ -40,6 +40,11 @@ pub struct ComponentDowncastRef<'a, F, C> where F: 'a, C: ComponentData {
     _phantom: PhantomData<C>
 }
 
+pub struct ComponentDowncastRefMut<'a, F, C> where F: 'a, C: ComponentData {
+    r: RefMut<'a, DynComponent<F>>,
+    _phantom: PhantomData<C>
+}
+
 impl<'a, F, C> Deref for ComponentDowncastRef<'a, F, C> where F: 'a, C: ComponentData {
     type Target = C;
 
@@ -49,7 +54,16 @@ impl<'a, F, C> Deref for ComponentDowncastRef<'a, F, C> where F: 'a, C: Componen
     }
 }
 
-impl<'a, F, C> DerefMut for ComponentDowncastRef<'a, F, C> where F: 'a, C: ComponentData {
+impl<'a, F, C> Deref for ComponentDowncastRefMut<'a, F, C> where F: 'a, C: ComponentData {
+    type Target = C;
+
+    fn deref(&self) -> &Self::Target {
+        let downcast = self.r.data.downcast_ref::<C>();
+        downcast.unwrap()
+    }
+}
+
+impl<'a, F, C> DerefMut for ComponentDowncastRefMut<'a, F, C> where F: 'a, C: ComponentData {
     fn deref_mut(&mut self) -> &mut Self::Target {
         let downcast = self.r.data.downcast_mut::<C>();
         downcast.unwrap()

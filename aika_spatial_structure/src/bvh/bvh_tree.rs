@@ -16,8 +16,9 @@ where
     B: BoundingVolume<FloatType = F>,
 {
     type FloatType = F;
+    type HitObjectType = Rc<G>;
 
-    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F>> {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Rc<G>>> {
         self.root.borrow().hit(ray, min, max)
     }
 }

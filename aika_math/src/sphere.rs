@@ -28,8 +28,9 @@ impl<F> Bounded<AABB<F>> for Sphere<F> where F: BaseFloat {
 
 impl<F> Hittable for Sphere<F> where F: BaseFloat {
     type FloatType = F;
+    type HitObjectType = ();
 
-    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F>> {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Self::HitObjectType>> {
         let temp = ray.origin - self.center;
 
         let two = F::from(2.0).unwrap();
@@ -67,7 +68,8 @@ impl<F> Hittable for Sphere<F> where F: BaseFloat {
                 return Some(HitRecord {
                     t,
                     normal: Some(normal),
-                    back_facing: Some(normal.dot(ray.direction) < F::zero())
+                    back_facing: Some(normal.dot(ray.direction) < F::zero()),
+                    hit_object: None,
                 })
             }
 

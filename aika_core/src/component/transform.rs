@@ -1,4 +1,4 @@
-use cgmath::{BaseFloat, Matrix4, Quaternion, Rotation, Vector3};
+use cgmath::{BaseFloat, Matrix3, Matrix4, Quaternion, Rotation, SquareMatrix, Vector3};
 use num_traits::{Zero};
 use crate::component::{ComponentData};
 
@@ -18,6 +18,21 @@ impl<F> Default for Transform<F> where F: BaseFloat {
             rotation: Quaternion::zero(),
         }
     }
+}
+
+/// utilities
+impl<F> Transform<F> where F: BaseFloat {
+    // /// construct a matrix that can rotate a vector to z-axis
+    // /// there will be more than one matrices, this function may return any
+    // pub fn matrix_vector_to_z(v: Vector3<F>) -> Matrix3<F> {
+    //     if v.is_zero() {
+    //         return Matrix3::identity();
+    //     }
+    //
+    //
+    //
+    //     ()
+    // }
 }
 
 impl<F> Transform<F> where F: BaseFloat {

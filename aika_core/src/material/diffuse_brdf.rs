@@ -8,6 +8,14 @@ pub struct DiffuseBRDF<F> {
     pub albedo: Vector3<F>,
 }
 
+impl<F> DiffuseBRDF<F> where F: BaseFloat {
+    pub fn new(albedo: Vector3<F>) -> DiffuseBRDF<F> {
+        DiffuseBRDF {
+            albedo
+        }
+    }
+}
+
 impl<F> SurfaceMaterial<F> for DiffuseBRDF<F> where F: BaseFloat {
     fn bsdf(&self, _light_dir: Vector3<F>, _view_dir: Vector3<F>) -> Vector3<F> {
         let pi = F::from(PI).unwrap();

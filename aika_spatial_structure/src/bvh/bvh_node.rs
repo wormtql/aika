@@ -22,8 +22,15 @@ where
     F: BaseFloat,
     B: BoundingVolume<FloatType = F>,
 {
-    pub fn hit_bv(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F>> {
-        self.bounding_volume.hit(ray, min, max)
+    pub fn hit_bv(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, ()>> {
+        let temp = self.bounding_volume.hit(ray, min, max);
+        let mut result = HitRecord::new();
+        if let Some(r) = temp {
+            r.copy_except_hit_object(&mut result);
+            Some(result)
+        } else {
+            None
+        }
     }
 
     pub fn is_leaf(&self) -> bool {
@@ -38,15 +45,16 @@ where
     G: Hittable<FloatType = F>
 {
     type FloatType = F;
+    type HitObjectType = Rc<G>;
 
-    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F>> {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Rc<G>>> {
         let hit_bv_result = self.hit_bv(ray, min, max);
         if hit_bv_result.is_none() {
             return None;
         }
 
         let mut max = max;
-        let mut hr = HitRecord::new();
+        let mut hr: HitRecord<F, Rc<G>> = HitRecord::new();
         if let Some(n) = &self.left {
             let result = n.borrow().hit(ray, min, max);
             if let Some(r) = result {
@@ -65,7 +73,8 @@ where
             let result = obj.hit(ray, min, max);
             if let Some(r) = result {
                 max = r.t;
-                hr = r.clone();
+                r.copy_except_hit_object(&mut hr);
+                hr.hit_object = Some(obj.clone());
             }
         }
 

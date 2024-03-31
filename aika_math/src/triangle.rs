@@ -26,8 +26,9 @@ impl<F> Bounded<AABB<F>> for Triangle<F> where F: BaseFloat {
 
 impl<F> Hittable for Triangle<F> where F: BaseFloat {
     type FloatType = F;
+    type HitObjectType = ();
 
-    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F>> {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Self::HitObjectType>> {
         let n = self.get_normal();
 
         let dn = ray.direction.dot(n);
@@ -53,7 +54,8 @@ impl<F> Hittable for Triangle<F> where F: BaseFloat {
             Some(HitRecord {
                 t,
                 normal: Some(n),
-                back_facing: Some(n.dot(ray.direction) < F::zero())
+                back_facing: Some(n.dot(ray.direction) < F::zero()),
+                hit_object: None,
             })
         } else {
             None

@@ -128,8 +128,9 @@ impl<T> Transformable<T> for AABB<T> where T: BaseFloat {
 
 impl<F> Hittable for AABB<F> where F: BaseFloat {
     type FloatType = F;
+    type HitObjectType = ();
 
-    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F>> {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Self::HitObjectType>> {
         let mut t_x_min: F;
         let mut t_x_max: F;
 
@@ -197,6 +198,7 @@ impl<F> Hittable for AABB<F> where F: BaseFloat {
                 t,
                 normal: None,
                 back_facing: None,
+                hit_object: None,
             })
         } else {
             None
