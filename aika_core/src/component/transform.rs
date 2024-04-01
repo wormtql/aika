@@ -2,6 +2,7 @@ use cgmath::{BaseFloat, Matrix3, Matrix4, Quaternion, Rotation, SquareMatrix, Ve
 use num_traits::{Zero};
 use crate::component::{ComponentData};
 
+#[derive(Clone)]
 pub struct Transform<F> {
     pub position: Vector3<F>,
     pub scale: F,

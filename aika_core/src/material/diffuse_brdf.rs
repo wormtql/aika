@@ -2,8 +2,9 @@ use std::f64::consts::PI;
 use cgmath::{BaseFloat, Vector3};
 use rand::{Rng, thread_rng};
 use aika_math::Ray;
-use crate::material::surface_material::SurfaceMaterial;
+use crate::material::{BSDF, MaterialTrait, VolumeTrait};
 
+#[derive(Clone)]
 pub struct DiffuseBRDF<F> {
     pub albedo: Vector3<F>,
 }
@@ -16,13 +17,13 @@ impl<F> DiffuseBRDF<F> where F: BaseFloat {
     }
 }
 
-impl<F> SurfaceMaterial<F> for DiffuseBRDF<F> where F: BaseFloat {
-    fn bsdf(&self, _light_dir: Vector3<F>, _view_dir: Vector3<F>) -> Vector3<F> {
+impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat {
+    fn evaluate(&self, _dir1: Vector3<F>, _dir2: Vector3<F>) -> Vector3<F> {
         let pi = F::from(PI).unwrap();
         self.albedo / pi
     }
 
-    fn sample_ray(&self, _current_dir: Vector3<F>) -> (F, Vector3<F>) {
+    fn sample_ray(&self, _current_dir: Vector3<F>) -> (Vector3<F>, Vector3<F>) {
         let mut r = thread_rng();
         let a = F::from(r.gen_range(0.0..1.0)).unwrap();
         let b = F::from(r.gen_range(0.0..1.0)).unwrap();
@@ -34,7 +35,22 @@ impl<F> SurfaceMaterial<F> for DiffuseBRDF<F> where F: BaseFloat {
         let (sin_phi, cos_phi) = phi.sin_cos();
 
         let dir = Vector3::new(sin_theta * cos_phi, sin_theta * sin_phi, cos_phi);
+        let weight = F::one() / pi2;
 
-        (F::one() / pi2, dir)
+        (Vector3::new(weight, weight, weight), dir)
+    }
+}
+
+impl<F> MaterialTrait<F> for DiffuseBRDF<F> where F: BaseFloat + 'static {
+    fn has_volume(&self) -> bool {
+        false
+    }
+
+    fn get_bsdf(&self) -> Box<dyn BSDF<F>> {
+        Box::new(self.clone())
+    }
+
+    fn get_volume(&self) -> Option<Box<dyn VolumeTrait<F>>> {
+        None
     }
 }

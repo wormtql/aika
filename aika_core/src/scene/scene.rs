@@ -11,7 +11,7 @@ pub struct Scene<F> {
     pub game_objects: Vec<GameObject<F>>,
 }
 
-impl<F> Scene<F> where F: BaseFloat {
+impl<F> Scene<F> where F: BaseFloat + 'static {
     pub fn add_game_object(&mut self, go: GameObject<F>) {
         self.game_objects.push(go);
     }

@@ -57,7 +57,7 @@ impl<F> GameObject<F> where F: BaseFloat + 'static {
     }
 }
 
-impl<F> GameObject<F> where F: BaseFloat {
+impl<F> GameObject<F> where F: BaseFloat + 'static {
     pub fn add_component_owned<C: ComponentData>(&mut self, component: C) {
         let component = Component::new_owned(self.clone(), component);
         self.add_component::<C>(component);
@@ -77,6 +77,16 @@ impl<F> GameObject<F> where F: BaseFloat {
     pub fn has_component<C: ComponentData>(&self) -> bool {
         let type_id = TypeId::of::<C>();
         self.go.borrow().components.contains_key(&type_id)
+    }
+
+    pub fn get_transform(&self) -> Option<Transform<F>> {
+        let component = self.get_component::<Transform<F>>();
+        if let Ok(c) = component {
+            let borrow = c.downcast::<Transform<F>>();
+            Some(borrow.clone())
+        } else {
+            None
+        }
     }
 }
 
