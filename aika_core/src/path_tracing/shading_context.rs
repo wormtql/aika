@@ -1,4 +1,4 @@
-use cgmath::{BaseFloat, Matrix3, Vector3};
+use cgmath::{BaseFloat, Matrix, Matrix3, Vector3};
 
 pub struct ShadingContext<F> {
     pub tangent: Vector3<F>,
@@ -13,6 +13,7 @@ pub struct ShadingContext<F> {
 
     /// transform world to tangent space
     pub tbn: Matrix3<F>,
+    pub tbn_inverse: Matrix3<F>,
 }
 
 impl<F> ShadingContext<F> where F: BaseFloat {
@@ -36,10 +37,15 @@ impl<F> ShadingContext<F> where F: BaseFloat {
             point,
             tbn,
             ray_dir_tangent_space: tbn * ray_dir,
+            tbn_inverse: tbn.transpose(),
         }
     }
 
     pub fn convert_vector_to_tangent_space(&self, dir: Vector3<F>) -> Vector3<F> {
         self.tbn * dir
+    }
+
+    pub fn convert_vector_tangent_to_world(&self, dir: Vector3<F>) -> Vector3<F> {
+        self.tbn_inverse * dir
     }
 }

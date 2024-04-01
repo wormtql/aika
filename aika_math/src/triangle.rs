@@ -9,12 +9,29 @@ pub struct Triangle<T> {
     pub c: Vector3<T>,
 }
 
-impl<T> Triangle<T> where T: BaseFloat {
-    pub fn get_normal(&self) -> Vector3<T> {
+impl<F> Triangle<F> where F: BaseFloat {
+    pub fn get_normal(&self) -> Vector3<F> {
         let ab = self.a - self.b;
         let ac = self.a - self.c;
         let n = ab.cross(ac).normalize();
         n
+    }
+
+    pub fn get_bary_centric_coordinate(&self, point: Vector3<F>) -> (F, F, F) {
+        let e1 = self.b - self.a;
+        let e2 = self.c - self.a;
+        let n = self.get_normal();
+        let q = n.cross(e2);
+        let s = point - self.a;
+        let qdote1 = q.dot(e1);
+        let qdots = q.dot(s);
+        let r = s.cross(e1);
+        let rdotn = r.dot(n);
+
+        let u = qdots / qdote1;
+        let v = rdotn / qdote1;
+        let w = F::one() - u - v;
+        (w, u, v)
     }
 }
 

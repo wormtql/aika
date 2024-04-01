@@ -34,7 +34,7 @@ impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat {
         let sin_theta = (F::one() - cos_theta).sqrt();
         let (sin_phi, cos_phi) = phi.sin_cos();
 
-        let dir = Vector3::new(sin_theta * cos_phi, sin_theta * sin_phi, cos_phi);
+        let dir = Vector3::new(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
         let weight = F::one() / pi2;
 
         (Vector3::new(weight, weight, weight), dir)
