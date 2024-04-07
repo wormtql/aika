@@ -1,8 +1,11 @@
 use std::f64::consts::PI;
-use cgmath::{BaseFloat, Vector3};
+use cgmath::{BaseFloat, InnerSpace, Vector3};
 use rand::{Rng, thread_rng};
 use aika_math::Ray;
-use crate::material::{BSDF, MaterialTrait, VolumeTrait};
+use crate::material::{BSDF, BSDFSampleResult, MaterialTrait, VolumeTrait};
+use anyhow::Result;
+use crate::f;
+use crate::path_tracing::ShadingContext;
 
 #[derive(Clone)]
 pub struct DiffuseBRDF<F> {
@@ -23,7 +26,7 @@ impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat {
         self.albedo / pi
     }
 
-    fn sample_ray(&self, _current_dir: Vector3<F>) -> (Vector3<F>, Vector3<F>) {
+    fn sample_ray(&self, current_dir: Vector3<F>) -> Result<BSDFSampleResult<F>> {
         let mut r = thread_rng();
         let a = F::from(r.gen_range(0.0..1.0)).unwrap();
         let b = F::from(r.gen_range(0.0..1.0)).unwrap();
@@ -34,20 +37,45 @@ impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat {
         let sin_theta = (F::one() - cos_theta).sqrt();
         let (sin_phi, cos_phi) = phi.sin_cos();
 
-        let dir = Vector3::new(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
-        let weight = F::one() / pi2;
+        let dir = Vector3::new(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta).normalize();
+        let pdf = F::one() / pi2;
+        let weight = self.albedo * F::from(2).unwrap() * dir.z;
 
-        (Vector3::new(weight, weight, weight), dir)
+        let result = BSDFSampleResult {
+            // pdf: Vector3::new(pdf, pdf, pdf),
+            direction: dir,
+            weight,
+            // value: self.evaluate(current_dir, dir),
+            // cos_theta: dir.z,
+            next_point: Vector3::new(f!(0), f!(0), f!(1e-6))
+        };
+        Ok(result)
     }
 }
 
-impl<F> MaterialTrait<F> for DiffuseBRDF<F> where F: BaseFloat + 'static {
+pub struct DiffuseBRDFMaterial<F> {
+    pub albedo: Vector3<F>,
+}
+
+impl<F> DiffuseBRDFMaterial<F> where F: BaseFloat {
+    pub fn new(albedo: Vector3<F>) -> Self {
+        DiffuseBRDFMaterial {
+            albedo
+        }
+    }
+}
+
+impl<F> MaterialTrait<F> for DiffuseBRDFMaterial<F> where F: BaseFloat + 'static {
     fn has_volume(&self) -> bool {
         false
     }
 
-    fn get_bsdf(&self) -> Box<dyn BSDF<F>> {
-        Box::new(self.clone())
+    fn has_bsdf(&self) -> bool {
+        true
+    }
+
+    fn get_bsdf(&self, context: &ShadingContext<F>) -> Option<Box<dyn BSDF<F>>> {
+        Some(Box::new(DiffuseBRDF::new(self.albedo)))
     }
 
     fn get_volume(&self) -> Option<Box<dyn VolumeTrait<F>>> {

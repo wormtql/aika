@@ -10,6 +10,7 @@ use anyhow::Result;
 
 pub struct GameObjectInternal<F> {
     pub components: HashMap<TypeId, Component<F>>,
+    pub name: String,
 }
 
 pub struct GameObject<F> {
@@ -21,13 +22,18 @@ impl<F> GameObject<F> where F: BaseFloat {
         let type_id = TypeId::of::<C>();
         self.go.borrow_mut().components.insert(type_id, component);
     }
+
+    pub fn set_name(&mut self, name: &str) {
+        self.go.borrow_mut().name = String::from(name);
+    }
 }
 
 impl<F> GameObject<F> where F: BaseFloat + 'static {
     /// create a game object without any component
-    pub fn new_empty() -> GameObject<F> {
+    pub fn new_empty(name: String) -> GameObject<F> {
         let go = Rc::new(RefCell::new(GameObjectInternal {
             components: HashMap::new(),
+            name,
             // _float_phantom: PhantomData
         }));
 
@@ -37,17 +43,17 @@ impl<F> GameObject<F> where F: BaseFloat + 'static {
     }
 
     /// create a game object with only transform component
-    pub fn new_with_transform() -> GameObject<F> {
-        let mut go = GameObject::new_empty();
+    pub fn new_with_transform(name: String) -> GameObject<F> {
+        let mut go = GameObject::new_empty(name);
         // let x = (*go)
         // GameObjectInternal::add_component_owned(go.clone(), Transform::default());
         go.add_component_owned::<Transform<F>>(Transform::default());
         go
     }
 
-    pub fn new_plane(width_x: F, width_y: F) -> GameObject<F> {
+    pub fn new_plane(name: String, width_x: F, width_y: F) -> GameObject<F> {
         let mesh = PlaneMesh::create_plane_mesh(width_x, width_y);
-        let mut go = GameObject::new_empty();
+        let mut go = GameObject::new_empty(name);
         let mesh_filter = MeshFilter {
             mesh
         };

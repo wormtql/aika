@@ -10,6 +10,9 @@ use crate::scene::{Scene};
 use crate::mashed_scene::MashedScene;
 use crate::material::{BSDF, Material};
 use crate::path_tracing::{ShadingContext, TracingService};
+use anyhow::Result;
+use indicatif::ProgressBar;
+use crate::path_tracing::shading_context::RayObjectStatus;
 
 pub struct SimplePathTracing<F> {
     _phantom: PhantomData<F>
@@ -110,88 +113,167 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
     }
 
     // return pdf, color
-    pub fn shade_one_ray(tracing_service: &TracingService<F>, ray: &Ray<F>, depth: usize) -> (Vector3<F>, Vector3<F>) {
-        let current_ray = ray.clone();
+    pub fn shade_one_ray(tracing_service: &TracingService<F>, ray: &Ray<F>, depth: usize, pixel: (usize, usize)) -> Result<Vector3<F>> {
+        // if depth == 0 {
+        //     return Ok(Vector3::zero());
+        // }
+
         let env_light_color = Vector3::new(F::one(), F::one(), F::one());
         // let env_light_color = Vector3::new(F::zero(), F::zero(), F::zero());
         let vector_one = Vector3::new(F::one(), F::one(), F::one());
 
+        let mut current_ray = ray.clone();
+        let mut radiance = Vector3::zero();
+        let mut throughput = vector_one;
+        let mut shading_context = ShadingContext::new();
+        // add air ior
+        shading_context.push_ior(vector_one);
 
-        let hit_result = tracing_service.hit_ray(&current_ray, F::from(1e-3).unwrap(), F::infinity());
-        if let Some(r) = hit_result {
-            let hit_triangle = r.hit_object.as_ref().unwrap().clone();
-            let hit_point = r.get_hit_point(&current_ray);
-            let uvw = hit_triangle.triangle.get_bary_centric_coordinate(hit_point);
-            let interpolated_normal = hit_triangle.interpolate_normal(uvw).unwrap().normalize();
-            let go = hit_triangle.go.clone();
+        for ray_iter in 0..depth {
+            let hit_result = tracing_service.hit_ray(&current_ray, F::from(1e-6).unwrap(), F::infinity());
+            // let hit_result = tracing_service.hit_ray(&current_ray, F::zero(), F::infinity());
+            if let Some(r) = hit_result {
+                let hit_triangle = r.hit_object.as_ref().unwrap().clone();
+                let hit_point = r.get_hit_point(&current_ray);
+                let uvw = hit_triangle.triangle.get_bary_centric_coordinate(hit_point);
+                // let interpolated_normal = hit_triangle.interpolate_normal(uvw).unwrap().normalize();
+                let interpolated_normal = hit_triangle.triangle.get_normal();
+                let go = hit_triangle.go.clone();
+                shading_context.go_stack.push(go.clone());
 
-            let shading_context = {
-                let tangent = (hit_triangle.triangle.a - hit_triangle.triangle.b).normalize();
-                let tangent = tangent - interpolated_normal * interpolated_normal.dot(tangent);
-                let bitangent = interpolated_normal.cross(tangent).normalize();
+                if go.has_component::<Material<F>>() {
+                    shading_context.normal = interpolated_normal;
+                    let tangent = (hit_triangle.triangle.a - hit_triangle.triangle.b).normalize();
+                    let tangent = tangent - interpolated_normal * interpolated_normal.dot(tangent);
+                    let bitangent = interpolated_normal.cross(tangent).normalize();
+                    shading_context.tangent = tangent;
+                    shading_context.bitangent = bitangent;
+                    shading_context.ray_dir = current_ray.direction;
+                    shading_context.point = hit_point;
+                    shading_context.recalculate_tangent_space();
 
-                ShadingContext::new(
-                    interpolated_normal, tangent, bitangent, ray.direction, hit_point
-                )
-            };
+                    let back_face = current_ray.direction.dot(interpolated_normal) > F::zero();
+                    // println!("depth: {}, back_face: {:?}", ray_iter, r.back_facing.unwrap());
+                    // let back_face = back_face > F::zero();
+                    // println!("{:?}", r.back_facing);
+                    // println!("t: {:?}", r.t);
+                    // println!("{:?}: {}", pixel, back_face);
+                    // println!("{:?}: {}", pixel, r.back_facing.unwrap());
+                    shading_context.back_face = back_face;
 
-            if go.has_component::<Material<F>>() {
-                let material_component = go.get_component::<Material<F>>().unwrap();
-                let material = material_component.downcast::<Material<F>>();
-                let bsdf = material.material_impl.get_bsdf();
+                    let material_component = go.get_component::<Material<F>>().unwrap();
+                    let material = material_component.downcast::<Material<F>>();
 
-                let punctual_light_contribution = SimplePathTracing::calculate_point_light_contribution(
-                    &tracing_service, &shading_context, &bsdf
-                ) + SimplePathTracing::calculate_directional_light_contribution(
-                    &tracing_service, &shading_context, &bsdf
-                );
+                    let mut sampled_ray_dir_ws = current_ray.direction;
+                    let mut sampled_ray_point = shading_context.point;
+                    let mut is_transmit = true;
 
-                let (sampled_weight, sampled_ray) = bsdf.sample_ray(-shading_context.ray_dir_tangent_space);
-                let sampled_ray_ws = shading_context.convert_vector_tangent_to_world(sampled_ray).normalize();
+                    if material.material_impl.has_bsdf() {
+                        let bsdf = material.material_impl.get_bsdf(&shading_context).unwrap();
+                        let sample_result = bsdf.sample_ray(-shading_context.ray_dir_tangent_space)?;
+                        sampled_ray_dir_ws = shading_context.convert_vector_tangent_to_world(sample_result.direction).normalize();
+                        throughput = throughput.mul_element_wise(sample_result.get_weight());
+                        let next_point_bias = shading_context.convert_vector_tangent_to_world(sample_result.next_point);
+                        sampled_ray_point += next_point_bias;
 
-                if depth == 1 {
-                    return (vector_one, punctual_light_contribution);
+                        is_transmit = sampled_ray_dir_ws.dot(shading_context.normal)
+                            * current_ray.direction.dot(shading_context.normal) > F::zero();
+
+                        // shading_context.ray_status = RayObjectStatus::Unknown;
+                        // if back_face && is_transmit {
+                        //     shading_context.ray_status = RayObjectStatus::Exiting;
+                        // } else if !back_face && is_transmit {
+                        //     shading_context.ray_status = RayObjectStatus::Entering;
+                        // }
+                        // println!("is transmit: {}, {}, back face: {}", is_transmit, ray_iter, back_face);
+                        if is_transmit && !back_face {
+                            if let Some(ior) = material.material_impl.get_ior() {
+                                // println!("entering ior: {:?}, {}", ior, ray_iter);
+                                // println!("ray: {:?}", sampled_ray_dir_ws.dot(shading_context.normal));
+                                shading_context.push_ior(ior);
+                            }
+                        } else if is_transmit && back_face {
+                            if material.material_impl.get_ior().is_some() {
+                                shading_context.pop_ior();
+                            }
+                            // println!("exit ior: {}", ray_iter);
+                        }
+                    }
+
+                    shading_context.ray_dir = sampled_ray_dir_ws;
+
+                    // println!("{}", is_transmit);
+                    // let is_transmit = true;
+                    // if is_transmit {
+                    //     println!("transmit");
+                    // }
+
+                    if is_transmit {
+                        if material.material_impl.has_volume() {
+                            let volume = material.material_impl.get_volume().unwrap();
+                            let sample_result = volume.sample_ray(
+                                &tracing_service, &shading_context, sampled_ray_dir_ws
+                            )?;
+                            // println!("{:?}", sample_result.weight);
+                            throughput.mul_assign_element_wise(sample_result.weight);
+                            sampled_ray_dir_ws = sample_result.next_direction;
+                            sampled_ray_point = sample_result.point;
+                        }
+                    }
+
+                    let next_ray = Ray::new(sampled_ray_point, sampled_ray_dir_ws);
+                    current_ray = next_ray.clone();
+                    // let indir_color = SimplePathTracing::shade_one_ray(
+                    //     &tracing_service, &next_ray, depth - 1, pixel
+                    // )?;
+                    // let color = weight.mul_element_wise(indir_color);
+                    // return Ok(color);
                 } else {
-                    let indir_ray = Ray::new(shading_context.point, sampled_ray_ws);
-                    let (indir_pdf, indir_color) = SimplePathTracing::shade_one_ray(tracing_service, &indir_ray, depth - 1);
-
-                    let brdf = bsdf.evaluate(sampled_ray, -shading_context.ray_dir_tangent_space);
-                    let cos_theta = sampled_ray.z;
-                    let color = indir_color.mul_element_wise(brdf) * cos_theta;
-                    let color = color.div_element_wise(sampled_weight);
-                    // let pdf = indir_pdf.mul_element_wise(sampled_weight);
-
-                    // return (vector_one, punctual_light_contribution + color);
-                    return (vector_one, color);
+                    // magenta error color
+                    let error_color = Vector3::new(F::one(), F::zero(), F::one());
+                    radiance += error_color.mul_element_wise(throughput);
+                    break;
                 }
             } else {
-                println!("error");
-                return (vector_one, Vector3::new(F::one(), F::zero(), F::one()));
-            }
-        } else {
-            return (vector_one, env_light_color);
-        }
+                // println!("not hit");
+                radiance += env_light_color.mul_element_wise(throughput);
+                break;
+            } // end if hit
+        } // end for
+
+        Ok(radiance)
     }
 
     pub fn trace(scene: &Scene<F>, width: usize, height: usize, camera: &PerspectiveCamera<F>, camera_transform: &Transform<F>) -> RgbImage {
         let mut result = RgbImage::new(width as u32, height as u32);
         let tracing_service = TracingService::new(scene);
 
+        let pb = ProgressBar::new((width * height) as u64);
+
         for (ray, (i, j)) in camera.iter_ray(&camera_transform, width, height) {
             let mut sum = Vector3::zero();
-            let spp = 64;
+            let spp = 512;
             for k in 0..spp {
-                let (pdf, color) = SimplePathTracing::shade_one_ray(&tracing_service, &ray, 3);
+                let color = SimplePathTracing::shade_one_ray(&tracing_service, &ray, 3, (i, j)).unwrap();
                 // println!("{:?}", color.div_element_wise(pdf));
                 sum += color;
             }
             // println!("{:?}", sum);
             let color = sum / F::from(spp).unwrap();
             let tone_mapped_color = tone_mapping(color);
+            // println!("{:?}", tone_mapped_color);
             let rgb = vector3_to_rgb(tone_mapped_color);
             // println!("{:?}", rgb);
             result.put_pixel(i as u32, height as u32 - 1 - j as u32, rgb);
+
+            pb.inc(1);
+
+            // if i == 147 && j == 62 {
+            //     break
+            // }
         }
+
+        pb.finish();
 
         result
     }

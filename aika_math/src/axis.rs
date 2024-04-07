@@ -30,10 +30,17 @@ impl Axis {
     }
 
     pub fn extract_value_vec3<F>(&self, v: Vector3<F>) -> F where F: Num + Copy {
-        unsafe {
-            let ptr = &v as *const Vector3<F> as *const F;
-            let arr = from_raw_parts(ptr, 3);
-            arr[*self as usize]
+        if *self == Axis::X {
+            v.x
+        } else if *self == Axis::Y {
+            v.y
+        } else {
+            v.z
         }
+        // unsafe {
+        //     let ptr = &v as *const Vector3<F> as *const F;
+        //     let arr = from_raw_parts(ptr, 3);
+        //     arr[*self as usize]
+        // }
     }
 }

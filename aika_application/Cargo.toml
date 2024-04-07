@@ -9,3 +9,7 @@ edition = "2021"
 aika_core = { path = "../aika_core" }
 cgmath = { version = "0.18.0", features=["swizzle"] }
 anyhow = "1.0"
+
+[[bin]]
+name = "diffuse_monkey"
+path = "src/bin/difuse_monkey.rs"

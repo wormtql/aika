@@ -51,6 +51,7 @@ impl<'a, F, C> Deref for ComponentDowncastRef<'a, F, C> where F: 'a, C: Componen
     fn deref(&self) -> &Self::Target {
         let downcast = self.r.data.downcast_ref::<C>();
         downcast.unwrap()
+        // self.r.data.downcast_ref_unchecked()
     }
 }
 

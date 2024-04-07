@@ -27,7 +27,7 @@ impl WavefrontMeshLoader {
             let mut v: CommonVertex<F> = CommonVertex::new();
             v.position = get_vec3::<_, F>(model.mesh.positions.as_slice(), i);
             if !model.mesh.normals.is_empty() {
-                v.normal = Some(get_vec3(&model.mesh.positions.as_slice(), i));
+                v.normal = Some(get_vec3(&model.mesh.normals.as_slice(), i));
             }
             // todo other attributes
             vertices.push(v);
@@ -97,6 +97,13 @@ impl WavefrontMeshLoader {
 
     pub fn suzanne<F>() -> Result<Mesh<Vec<CommonVertex<F>>>> where F: BaseFloat {
         let obj_file = include_bytes!("./suzanne.obj");
+        let result = WavefrontMeshLoader::load_wavefront_obj_memory(obj_file.as_slice())?;
+
+        Ok(result.into_iter().next().unwrap())
+    }
+
+    pub fn sphere<F>() -> Result<Mesh<Vec<CommonVertex<F>>>> where F: BaseFloat {
+        let obj_file = include_bytes!("./sphere.obj");
         let result = WavefrontMeshLoader::load_wavefront_obj_memory(obj_file.as_slice())?;
 
         Ok(result.into_iter().next().unwrap())

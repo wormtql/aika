@@ -15,42 +15,8 @@ macro_rules! f {
     }
 }
 
-fn get_plane<F>() -> GameObject<F> where F: BaseFloat + 'static {
-    let mut game_object = GameObject::new_empty(String::from("Plane"));
-    game_object.set_name("back");
-
-    // transform
-    {
-        let transform = Transform::new(
-            Vector3::new(f!(0.0), f!(1.0), f!(-4)),
-            F::one(),
-            Quaternion::zero()
-        );
-        game_object.add_component_owned(transform);
-    }
-
-    // mesh
-    {
-        // let mesh: DynMesh<F> = PlaneMesh::create_plane_mesh(f!(10), f!(10)).to_dyn_mesh();
-        let mesh: DynMesh<F> = WavefrontMeshLoader::suzanne().unwrap().to_dyn_mesh();
-        // let mesh: DynMesh<F> = WavefrontMeshLoader::suzanne()?.to_dyn_mesh();
-        let mesh_filter = MeshFilter::new(mesh);
-        game_object.add_component_owned(mesh_filter);
-    }
-
-    // material
-    {
-        let material: Material<F> = Material { material_impl: Box::new(DiffuseBRDFMaterial::new(Vector3::new(f!(1.0), f!(0.5), f!(0.2))) ) };
-        game_object.add_component_owned(material);
-    }
-
-    game_object
-}
-
 fn main_with_type<F>() -> Result<()> where F: BaseFloat + 'static {
     let mut scene = Scene::<F>::new();
-
-    scene.add_game_object(get_plane());
 
     let mut game_object = GameObject::new_empty(String::from("sphere"));
 
@@ -64,18 +30,19 @@ fn main_with_type<F>() -> Result<()> where F: BaseFloat + 'static {
         game_object.add_component_owned(transform);
     }
 
-    let mesh: DynMesh<F> = WavefrontMeshLoader::sphere()?.to_dyn_mesh();
+    let mesh: DynMesh<F> = WavefrontMeshLoader::suzanne()?.to_dyn_mesh();
     // let mesh: DynMesh<F> = WavefrontMeshLoader::suzanne()?.to_dyn_mesh();
     let mesh_filter = MeshFilter::new(mesh);
     game_object.add_component_owned(mesh_filter);
 
+    // material
     {
-        // let material: Material<F> = Material { material_impl: Box::new(DiffuseBRDFMaterial::new(Vector3::new(f!(1.0), f!(0.8), f!(0.2))) ) };
+        let material: Material<F> = Material { material_impl: Box::new(DiffuseBRDFMaterial::new(Vector3::new(f!(1.0), f!(0.8), f!(0.2))) ) };
         // let material: Material<F> = Material { material_impl: Box::new(AbsorptionVolumeMaterial::new(Vector3::new(f!(1.0), f!(0.5), f!(0.2)))) };
         // let material: Material<F> = Material {
         //     material_impl: Box::new(ConductorBRDF::gold_in_air())
         // };
-        let material = Material { material_impl: Box::new(DielectricMaterial::new(Vector3::new(f!(2.0), f!(2.0), f!(2.0)))) };
+        // let material = Material { material_impl: Box::new(DielectricMaterial::new(Vector3::new(f!(2.0), f!(2.0), f!(2.0)))) };
         game_object.add_component_owned(material);
     }
 

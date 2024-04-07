@@ -71,7 +71,7 @@ impl<F> Hittable for Triangle<F> where F: BaseFloat {
             Some(HitRecord {
                 t,
                 normal: Some(n),
-                back_facing: Some(n.dot(ray.direction) < F::zero()),
+                back_facing: Some(n.dot(ray.direction) > F::zero()),
                 hit_object: None,
             })
         } else {
@@ -142,5 +142,22 @@ mod test {
 
         let hit = triangle.hit(&ray, 0.0, f32::infinity());
         assert!(hit.is_none());
+    }
+
+    #[test]
+    fn test_triangle_hit4() {
+        let triangle = Triangle {
+            a: Vector3 { x: 0.0, y: 0.0, z: 0.0 },
+            b: Vector3 { x: 1.0, y: 0.0, z: 0.0 },
+            c: Vector3 { x: 0.0, y: 1.0, z: 0.0 },
+        };
+        let ray = Ray {
+            origin: Vector3 { x: 0.3, y: 0.3, z: -1.0 },
+            direction: Vector3 { x: 0.0, y: 0.0, z: 1.0 }.normalize(),
+        };
+
+        let hit = triangle.hit(&ray, 0.0, f32::infinity());
+        assert!(hit.is_some());
+        assert_eq!(hit.unwrap().t, 1.0);
     }
 }

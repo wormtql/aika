@@ -1,4 +1,4 @@
-use cgmath::{BaseFloat, Matrix3, Matrix4, Quaternion, Rotation, SquareMatrix, Vector3};
+use cgmath::{BaseFloat, Deg, Euler, Matrix3, Matrix4, Point3, Quaternion, Rotation, SquareMatrix, Vector3};
 use num_traits::{Zero};
 use crate::component::{ComponentData};
 
@@ -16,7 +16,7 @@ impl<F> Default for Transform<F> where F: BaseFloat {
             position: Vector3::zero(),
             scale: F::zero(),
             // todo
-            rotation: Quaternion::zero(),
+            rotation: Euler::new(Deg(F::zero()), Deg(F::zero()), Deg(F::zero())).into(),
         }
     }
 }
@@ -55,6 +55,13 @@ impl<F> Transform<F> where F: BaseFloat {
 
     pub fn transform_direction(&self, dir: Vector3<F>) -> Vector3<F> {
         self.rotation.rotate_vector(dir)
+    }
+
+    pub fn transform_point(&self, point: Vector3<F>) -> Vector3<F> {
+        let point = point * self.scale;
+        let after_rotation = self.rotation.rotate_point(Point3::new(point.x, point.y, point.z));
+        let after_translate = Vector3::new(after_rotation.x + self.position.x, after_rotation.y + self.position.y, after_rotation.z + self.position.z);
+        after_translate
     }
 }
 

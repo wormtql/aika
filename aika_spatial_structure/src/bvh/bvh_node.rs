@@ -49,30 +49,42 @@ where
 
     fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Rc<G>>> {
         let hit_bv_result = self.hit_bv(ray, min, max);
+        // println!("{:?}", hit_bv_result);
         if hit_bv_result.is_none() {
             return None;
         }
 
         let mut max = max;
         let mut hr: HitRecord<F, Rc<G>> = HitRecord::new();
-        if let Some(n) = &self.left {
-            let result = n.borrow().hit(ray, min, max);
-            if let Some(r) = result {
-                max = r.t;
-                hr = r.clone();
-            }
-        }
+        hr.t = F::infinity();
         if let Some(n) = &self.right {
             let result = n.borrow().hit(ray, min, max);
             if let Some(r) = result {
-                max = r.t;
-                hr = r.clone();
+                // max = r.t;
+                if r.t < hr.t {
+                    hr = r.clone();
+                }
+                // hr = r.clone();
+            }
+        }
+        if let Some(n) = &self.left {
+            let result = n.borrow().hit(ray, min, max);
+            if let Some(r) = result {
+                // max = r.t;
+                if r.t < hr.t {
+                    hr = r.clone();
+                }
+                // hr = r.clone();
             }
         }
         for obj in self.objects.iter() {
             let result = obj.hit(ray, min, max);
             if let Some(r) = result {
                 max = r.t;
+                // if r.t < hr.t {
+                //     r.copy_except_hit_object(&mut hr);
+                //     hr.hit_object = Some(obj.clone());
+                // }
                 r.copy_except_hit_object(&mut hr);
                 hr.hit_object = Some(obj.clone());
             }

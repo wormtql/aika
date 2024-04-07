@@ -26,7 +26,7 @@ pub struct TracingService<F> {
 
 impl<F> TracingService<F> where F: BaseFloat + 'static {
     pub fn hit_ray(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Rc<MashedTriangle<F>>>> {
-        let result = self.mashed_scene.bvh.hit(ray, min, max);
+        let result = self.mashed_scene.hit(ray, min, max);
         result
     }
 
@@ -35,7 +35,7 @@ impl<F> TracingService<F> where F: BaseFloat + 'static {
     }
 
     pub fn new(scene: &Scene<F>) -> TracingService<F> {
-        let mashed_scene = MashedScene::from_scene(scene);
+        let mashed_scene = MashedScene::from_scene_bvh(scene);
         let point_lights = {
             let game_objects = scene.get_game_objects_of_type::<PointLight<F>>();
             let mut result = Vec::new();

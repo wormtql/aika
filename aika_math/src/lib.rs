@@ -9,6 +9,7 @@ pub use triangle::Triangle;
 pub use sphere::Sphere;
 pub use axis::Axis;
 pub use have_center::HaveCenter;
+pub use complex::Complex;
 
 mod aabb;
 mod bounded;
@@ -20,3 +21,6 @@ mod sphere;
 mod axis;
 mod have_center;
 mod vector_ext;
+mod complex;
+pub mod math_utils;
+mod distribution;

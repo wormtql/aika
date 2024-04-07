@@ -312,4 +312,16 @@ mod test {
         let hit = bb.hit(&ray, 0.0, 0.25);
         assert!(hit.is_none());
     }
+
+    #[test]
+    fn test_aabb_hit8() {
+        let bb: AABB<f32> = AABB::unit();
+        let ray = Ray {
+            origin: Vector3 { x: 0.0, y: 0.0, z: 0.0 },
+            direction: Vector3 { x: 0.0, y: 0.0, z: 1.0 }.normalize(),
+        };
+
+        let hit = bb.hit(&ray, 0.0, f32::infinity());
+        assert!(hit.is_some());
+    }
 }
