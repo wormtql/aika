@@ -32,14 +32,13 @@ impl<T, H> HitRecord<T, H> where T: BaseFloat {
     }
 }
 
-pub trait Hittable {
-    type FloatType;
-    type HitObjectType;
+/// F: Float type
+/// H: Hit data
+pub trait Hittable<F, H> {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F)
+        -> Option<HitRecord<F, H>>;
 
-    fn hit(&self, ray: &Ray<Self::FloatType>, min: Self::FloatType, max: Self::FloatType)
-        -> Option<HitRecord<Self::FloatType, Self::HitObjectType>>;
-
-    fn is_hit(&self, ray: &Ray<Self::FloatType>, min: Self::FloatType, max: Self::FloatType) -> bool {
+    fn is_hit(&self, ray: &Ray<F>, min: F, max: F) -> bool {
         self.hit(ray, min, max).is_some()
     }
 }

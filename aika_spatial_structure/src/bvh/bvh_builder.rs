@@ -2,22 +2,26 @@ use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;
 use cgmath::BaseFloat;
-use aika_math::{Bounded, BoundingVolume, HaveCenter};
+use aika_math::*;
 use crate::bvh::{BVHNode, BVHSplitHeuristic, BVHTree};
 
-pub struct BVHBuilder<B, G> {
+pub struct BVHBuilder<F, B, G, GH> {
     pub max_span: usize,
 
     pub objects: Vec<Rc<G>>,
     _phantom: PhantomData<B>,
+    _float_phantom: PhantomData<F>,
+    _geometry_hittable_phantom: PhantomData<GH>,
 }
 
-impl<G, B> BVHBuilder<B, G> {
+impl<F, G, B, GH> BVHBuilder<F, B, G, GH> {
     pub fn new(max_span: usize) -> Self {
         Self {
             max_span,
             objects: Vec::new(),
             _phantom: PhantomData,
+            _float_phantom: PhantomData,
+            _geometry_hittable_phantom: PhantomData,
         }
     }
 
@@ -32,13 +36,13 @@ impl<G, B> BVHBuilder<B, G> {
     }
 }
 
-impl<B, G, F> BVHBuilder<B, G>
+impl<B, G, F, GH> BVHBuilder<F, B, G, GH>
 where
     F: BaseFloat,
-    B: BoundingVolume<FloatType = F>,
-    G: Bounded<B> + HaveCenter<FloatType = F>,
+    B: Mergeable<B, Result = B> + Hittable<F, ()>,
+    G: Bounded<B> + HaveCenter<F>,
 {
-    fn build_helper<H>(&self, objects: &[Rc<G>], split_heuristic: &mut H) -> BVHNode<B, G>
+    fn build_helper<H>(&self, objects: &[Rc<G>], split_heuristic: &mut H) -> BVHNode<F, B, G, GH>
     where
         H: BVHSplitHeuristic,
     {
@@ -52,6 +56,7 @@ where
                 right: None,
                 objects: objects.iter().cloned().collect(),
                 bounding_volume: bv,
+                _float_phantom: PhantomData,
             }
         } else {
             let (vec1, vec2) = split_heuristic.split(objects);
@@ -63,11 +68,12 @@ where
                 right: Some(Rc::new(RefCell::new(right))),
                 objects: Vec::new(),
                 bounding_volume: bv,
+                _float_phantom: PhantomData,
             }
         }
     }
 
-    pub fn build<H>(&self, split_heuristic: &mut H) -> BVHTree<B, G>
+    pub fn build<H>(&self, split_heuristic: &mut H) -> BVHTree<F, B, G, GH>
     where
         H: BVHSplitHeuristic,
     {

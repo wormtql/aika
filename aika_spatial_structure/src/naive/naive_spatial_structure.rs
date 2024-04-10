@@ -27,15 +27,12 @@ impl<F, G> NaiveSpatialStructure<F, G> {
     }
 }
 
-impl<F, G> Hittable for NaiveSpatialStructure<F, G>
+impl<F, G> Hittable<F, Rc<G>> for NaiveSpatialStructure<F, G>
 where
     F: BaseFloat,
-    G: Hittable<FloatType = F>
+    G: Hittable<F, ()>
 {
-    type FloatType = F;
-    type HitObjectType = Rc<G>;
-
-    fn hit(&self, ray: &Ray<Self::FloatType>, min: Self::FloatType, max: Self::FloatType) -> Option<HitRecord<Self::FloatType, Self::HitObjectType>> {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Rc<G>>> {
         let mut max = max;
         let mut hr: HitRecord<F, Rc<G>> = HitRecord::new();
         let mut is_hit = false;

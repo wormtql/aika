@@ -9,13 +9,13 @@ use crate::component::{MeshFilter, Transform};
 use crate::mashed_scene::mashed_triangle::MashedTriangle;
 
 pub struct MashedScene<F> {
-    spatial_structure: Box<dyn Hittable<FloatType = F, HitObjectType = Rc<MashedTriangle<F>>>>,
+    spatial_structure: Box<dyn Hittable<F, Rc<MashedTriangle<F>>>>,
     // bvh: BVHTree<AABB<F>, MashedTriangle<F>>,
     triangle_count: usize,
 }
 
 impl<F> MashedScene<F> where F: BaseFloat + 'static {
-    pub fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F,Rc<MashedTriangle<F>>>> {
+    pub fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Rc<MashedTriangle<F>>>> {
         self.spatial_structure.hit(&ray, min, max)
     }
 

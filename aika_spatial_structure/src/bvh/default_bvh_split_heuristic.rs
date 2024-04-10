@@ -17,7 +17,7 @@ impl Default for DefaultBVHSplitHeuristic {
 
 impl BVHSplitHeuristic for DefaultBVHSplitHeuristic {
 
-    fn split<F: BaseFloat, G: HaveCenter<FloatType = F>>(&mut self, objects: &[Rc<G>]) -> (Vec<Rc<G>>, Vec<Rc<G>>) {
+    fn split<F: BaseFloat, G: HaveCenter<F>>(&mut self, objects: &[Rc<G>]) -> (Vec<Rc<G>>, Vec<Rc<G>>) {
         let mut objects_with_positions = objects.iter().map(|obj| {
             (obj.clone(), obj.get_center())
         }).collect::<Vec<_>>();

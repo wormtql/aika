@@ -2,8 +2,8 @@ use std::any::TypeId;
 use cgmath::{BaseFloat, InnerSpace, Vector3};
 use num_traits::{cast, Float};
 
-use crate::{AABB, Bounded, HaveCenter, HitRecord, Hittable, Ray};
-use crate::utils::{abs_vector3, cast_f64, difference_of_products, gamma, max_component_index, max_component_value, permute_vector3};
+use crate::*;
+use crate::utils::{abs_vector3, cast_f64, difference_of_products, gamma, length_vector3, max_component_index, max_component_value, permute_vector3};
 
 pub struct Triangle<T> {
     pub a: Vector3<T>,
@@ -48,11 +48,8 @@ impl<F> Bounded<AABB<F>> for Triangle<F> where F: BaseFloat {
 }
 
 // See https://pbr-book.org/4ed/Shapes/Triangle_Meshes
-impl<F> Hittable for Triangle<F> where F: BaseFloat + 'static {
-    type FloatType = F;
-    type HitObjectType = ();
-
-    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Self::HitObjectType>> {
+impl<F> Hittable<F, ()> for Triangle<F> where F: BaseFloat + 'static {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, ()>> {
         let n = self.get_normal();
 
         let e2 = self.c - self.a;
@@ -187,14 +184,43 @@ impl<F> Hittable for Triangle<F> where F: BaseFloat + 'static {
     }
 }
 
-impl<F> HaveCenter for Triangle<F> where F: BaseFloat {
-    type FloatType = F;
-
-    fn get_center(&self) -> Vector3<Self::FloatType> {
+impl<F> HaveCenter<F> for Triangle<F> where F: BaseFloat {
+    fn get_center(&self) -> Vector3<F> {
         let three = F::from(3.0).unwrap();
         (self.a + self.b + self.c) / three
     }
 }
+
+impl<F> HaveArea<F> for Triangle<F> where F: BaseFloat {
+    fn area(&self) -> F {
+        let ab = self.b - self.a;
+        let ac = self.c - self.a;
+        let cross = ab.cross(ac);
+
+        F::from(0.5).unwrap() * length_vector3(cross)
+    }
+}
+
+impl<F> SampleShape<F> for Triangle<F> where F: BaseFloat {
+    fn sample_shape(&self, r1: F, r2: F) -> Option<SampleShapeResult<F>> {
+        let mut r1 = r1;
+        let mut r2 = r2;
+        let one = F::one();
+        if r1 + r2 >= one {
+            r1 = one - r1;
+            r2 = one - r2;
+        }
+        let r3 = one - r1 - r2;
+        let point = self.a * r1 + self.b * r2 + self.c * r3;
+        let area = self.area();
+        Some(SampleShapeResult {
+            pdf: one / area,
+            position: point
+        })
+    }
+}
+
+impl<F> PrimitiveTrait<F> for Triangle<F> where F: BaseFloat {}
 
 #[cfg(test)]
 mod test {

@@ -1,4 +1,26 @@
+use std::f64::consts::PI;
 use cgmath::{BaseFloat, InnerSpace, Vector3};
+
+pub fn get_pi<F: BaseFloat>() -> F {
+    F::from(PI).unwrap()
+}
+
+pub fn get_2pi<F: BaseFloat>() -> F {
+    F::from(PI * 2.0).unwrap()
+}
+
+pub fn get_4pi<F: BaseFloat>() -> F {
+    F::from(PI * 4.0).unwrap()
+}
+
+pub fn length_square_vector3<F: BaseFloat>(v: Vector3<F>) -> F {
+    let l = v.x * v.x + v.y * v.y + v.z * v.z;
+    l
+}
+
+pub fn length_vector3<F: BaseFloat>(v: Vector3<F>) -> F {
+    length_square_vector3(v).sqrt()
+}
 
 pub fn lerp<F>(x: F, a: F, b: F) -> F where F: BaseFloat {
     (F::one() - x) * a + x * b

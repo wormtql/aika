@@ -31,11 +31,8 @@ impl<F> Bounded<AABB<F>> for MashedTriangle<F> where F: BaseFloat {
     }
 }
 
-impl<F> Hittable for MashedTriangle<F> where F: BaseFloat + 'static {
-    type FloatType = F;
-    type HitObjectType = GameObject<F>;
-
-    fn hit(&self, ray: &Ray<Self::FloatType>, min: Self::FloatType, max: Self::FloatType) -> Option<HitRecord<Self::FloatType, Self::HitObjectType>> {
+impl<F> Hittable<F, GameObject<F>> for MashedTriangle<F> where F: BaseFloat + 'static {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, GameObject<F>>> {
         let hit_result = self.triangle.hit(ray, min, max);
         if let Some(r) = hit_result {
             let mut ret = HitRecord::new();
@@ -48,10 +45,8 @@ impl<F> Hittable for MashedTriangle<F> where F: BaseFloat + 'static {
     }
 }
 
-impl<F> HaveCenter for MashedTriangle<F> where F: BaseFloat {
-    type FloatType = F;
-
-    fn get_center(&self) -> Vector3<Self::FloatType> {
+impl<F> HaveCenter<F> for MashedTriangle<F> where F: BaseFloat {
+    fn get_center(&self) -> Vector3<F> {
         self.triangle.get_center()
     }
 }

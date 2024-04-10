@@ -1,6 +1,8 @@
+use std::f64::consts::PI;
 use cgmath::{BaseFloat, InnerSpace, Matrix4, SquareMatrix, Vector3};
 use num_traits::Float;
-use crate::{AABB, Bounded, HaveCenter, HitRecord, Hittable, Ray};
+use crate::*;
+use crate::utils::{get_2pi, get_4pi};
 
 #[derive(Debug)]
 pub struct Sphere<T> {
@@ -26,11 +28,8 @@ impl<F> Bounded<AABB<F>> for Sphere<F> where F: BaseFloat {
     }
 }
 
-impl<F> Hittable for Sphere<F> where F: BaseFloat {
-    type FloatType = F;
-    type HitObjectType = ();
-
-    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Self::HitObjectType>> {
+impl<F> Hittable<F, ()> for Sphere<F> where F: BaseFloat {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, ()>> {
         let temp = ray.origin - self.center;
 
         let two = F::from(2.0).unwrap();
@@ -78,13 +77,39 @@ impl<F> Hittable for Sphere<F> where F: BaseFloat {
     }
 }
 
-impl<F: BaseFloat> HaveCenter for Sphere<F> {
-    type FloatType = F;
-
-    fn get_center(&self) -> Vector3<Self::FloatType> {
+impl<F: BaseFloat> HaveCenter<F> for Sphere<F> {
+    fn get_center(&self) -> Vector3<F> {
         self.center
     }
 }
+
+impl<F> HaveArea<F> for Sphere<F> where F: BaseFloat {
+    fn area(&self) -> F {
+        let four_pi = F::from(4.0 * PI).unwrap();
+        four_pi * self.radius * self.radius
+    }
+}
+
+impl<F> SampleShape<F> for Sphere<F> where F: BaseFloat {
+    fn sample_shape(&self, r1: F, r2: F) -> Option<SampleShapeResult<F>> {
+        let pi_2 = get_2pi::<F>();
+        let phi: F = pi_2 * r1;
+        let cos_theta = F::one() - F::from(2).unwrap() * r2;
+        let sin_theta = (F::one() - cos_theta * cos_theta).sqrt();
+        let (sin_phi, cos_phi) = phi.sin_cos();
+
+        let x = sin_theta * cos_phi;
+        let y = sin_theta * sin_phi;
+        let z = cos_theta;
+        let offset = Vector3::new(x, y, z) * self.radius;
+        Some(SampleShapeResult {
+            pdf: F::one() / get_4pi(),
+            position: self.center + offset,
+        })
+    }
+}
+
+impl<F> PrimitiveTrait<F> for Sphere<F> where F: BaseFloat {}
 
 mod test {
     use cgmath::{InnerSpace, Vector3};

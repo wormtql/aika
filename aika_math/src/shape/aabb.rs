@@ -2,7 +2,7 @@ use std::fmt::Display;
 use cgmath::{BaseFloat, Matrix4, Vector3, Vector4};
 use num_traits::{Float, Num, One, Zero};
 
-use crate::{BoundingVolume, HaveCenter, HitRecord, Hittable, Ray, Transformable};
+use crate::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AABB<T> {
@@ -126,11 +126,8 @@ impl<T> Transformable<T> for AABB<T> where T: BaseFloat {
     }
 }
 
-impl<F> Hittable for AABB<F> where F: BaseFloat {
-    type FloatType = F;
-    type HitObjectType = ();
-
-    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Self::HitObjectType>> {
+impl<F> Hittable<F, ()> for AABB<F> where F: BaseFloat {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, ()>> {
         let mut t_x_min: F;
         let mut t_x_max: F;
 
@@ -206,17 +203,27 @@ impl<F> Hittable for AABB<F> where F: BaseFloat {
     }
 }
 
-impl<F> HaveCenter for AABB<F> where F: Copy {
-    type FloatType = F;
-
+impl<F> HaveCenter<F> for AABB<F> where F: Copy {
     fn get_center(&self) -> Vector3<F> {
         self.center
     }
 }
 
-impl<F> BoundingVolume for AABB<F> where F: BaseFloat {
-    fn merge(&self, other: &Self) -> Self {
-        self.union(other)
+impl<F> Mergeable for AABB<F> where F: BaseFloat {
+    type Result = AABB<F>;
+
+    fn merge(&self, rhs: &Self) -> Self::Result {
+        self.union(rhs)
+    }
+}
+
+impl<F> HaveArea<F> for AABB<F> where F: BaseFloat {
+    fn area(&self) -> F {
+        let diag = self.extent * F::from(2).unwrap();
+        let a = diag.x;
+        let b = diag.y;
+        let c = diag.z;
+        (a * b + b * c + a * c) * F::from(2).unwrap()
     }
 }
 
