@@ -26,7 +26,6 @@ impl<F> MashedScene<F> where F: BaseFloat + 'static {
     pub fn from_scene_bvh(scene: &Scene<F>) -> MashedScene<F> {
         let mut mashed_triangles: Vec<Rc<MashedTriangle<F>>> = Vec::new();
         for go in scene.get_game_objects_of_type::<MeshFilter<F>>() {
-            // todo transform
             let mesh_component = go.get_component::<MeshFilter<F>>().unwrap();
             let mesh = mesh_component.downcast::<MeshFilter<F>>();
 
@@ -34,7 +33,7 @@ impl<F> MashedScene<F> where F: BaseFloat + 'static {
             // let transform = mesh_component.downcast::<Transform<F>>();
             let transform = go.get_transform().unwrap();
 
-            for (triangle, indices) in mesh.mesh.iter_triangles().zip(mesh.mesh.iter_triangle_indices()) {
+            for (triangle, indices) in mesh.mesh.iter_triangles().zip(mesh.mesh.iter_triangle_indices()).skip(0) {
                 let a = transform.transform_point(triangle.a);
                 let b = transform.transform_point(triangle.b);
                 let c = transform.transform_point(triangle.c);

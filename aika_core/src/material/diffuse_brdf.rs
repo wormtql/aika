@@ -1,11 +1,10 @@
 use std::f64::consts::PI;
 use cgmath::{BaseFloat, InnerSpace, Vector3};
-use rand::{Rng, thread_rng};
 use aika_math::Ray;
 use crate::material::{BSDF, BSDFSampleResult, MaterialTrait, VolumeTrait};
 use anyhow::Result;
 use crate::f;
-use crate::path_tracing::ShadingContext;
+use crate::path_tracing::{ShadingContext, TracingService};
 
 #[derive(Clone)]
 pub struct DiffuseBRDF<F> {
@@ -20,16 +19,19 @@ impl<F> DiffuseBRDF<F> where F: BaseFloat {
     }
 }
 
-impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat {
-    fn evaluate(&self, _dir1: Vector3<F>, _dir2: Vector3<F>) -> Vector3<F> {
+impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat + 'static {
+    fn evaluate(&self, _dir1: Vector3<F>, _dir2: Vector3<F>) -> Option<Vector3<F>> {
         let pi = F::from(PI).unwrap();
-        self.albedo / pi
+        Some(self.albedo / pi)
     }
 
-    fn sample_ray(&self, current_dir: Vector3<F>) -> Result<BSDFSampleResult<F>> {
-        let mut r = thread_rng();
-        let a = F::from(r.gen_range(0.0..1.0)).unwrap();
-        let b = F::from(r.gen_range(0.0..1.0)).unwrap();
+    fn sample_ray(&self, service: &mut TracingService<F>, current_dir: Vector3<F>) -> Option<BSDFSampleResult<F>> {
+        if current_dir.z < F::zero() {
+            println!("current dir: {:?}", current_dir);
+        }
+        // assert!(current_dir.z >= F::zero());
+        let a = service.random_0_1();
+        let b = service.random_0_1();
 
         let pi2 = F::from(PI * 2.0).unwrap();
         let phi = pi2 * a;
@@ -38,6 +40,10 @@ impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat {
         let (sin_phi, cos_phi) = phi.sin_cos();
 
         let dir = Vector3::new(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta).normalize();
+        // assert!(dir.z >= F::zero());
+        if dir.z < F::zero() {
+            println!("sampled diffuse brdf dir is under normal {:?}", dir);
+        }
         let pdf = F::one() / pi2;
         let weight = self.albedo * F::from(2).unwrap() * dir.z;
 
@@ -47,9 +53,9 @@ impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat {
             weight,
             // value: self.evaluate(current_dir, dir),
             // cos_theta: dir.z,
-            next_point: Vector3::new(f!(0), f!(0), f!(1e-6))
+            next_point: Vector3::new(f!(0), f!(0), f!(1e-5))
         };
-        Ok(result)
+        Some(result)
     }
 }
 

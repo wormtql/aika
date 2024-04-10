@@ -42,7 +42,7 @@ impl<F> VolumeTrait<F> for AbsorptionVolume<F> where F: BaseFloat + 'static {
     ) -> Result<VolumeSampleResult<F>> {
         let point = shading_context.point;
         let normal = shading_context.normal;
-        let ray = Ray::new(point - normal * F::from(1e-6).unwrap(), current_dir);
+        let ray = Ray::new(point - normal * F::from(1e-3).unwrap(), current_dir);
         // let ray = Ray::new(point, current_dir);
         // println!("Before hit");
         // let hit_result = tracing_service.hit_ray(&ray, F::from(1e-9).unwrap(), F::infinity());

@@ -29,6 +29,7 @@ pub struct ShadingContext<F> {
     pub back_face: bool,
 
     pub go_stack: Vec<GameObject<F>>,
+    pub hit_point_stack: Vec<Vector3<F>>,
 }
 
 impl<F> Default for ShadingContext<F> where F: BaseFloat {
@@ -46,6 +47,7 @@ impl<F> Default for ShadingContext<F> where F: BaseFloat {
             ray_status: RayObjectStatus::Unknown,
             back_face: false,
             go_stack: Vec::new(),
+            hit_point_stack: Vec::new(),
         }
     }
 }

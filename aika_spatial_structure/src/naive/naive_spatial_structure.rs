@@ -39,10 +39,10 @@ where
         let mut max = max;
         let mut hr: HitRecord<F, Rc<G>> = HitRecord::new();
         let mut is_hit = false;
-        for item in self.items.iter() {
+        for (index, item) in self.items.iter().enumerate() {
             let hit_result = item.hit(&ray, min, max);
             if let Some(r) = hit_result {
-                max = r.t;
+                // max = r.t;
                 r.copy_except_hit_object(&mut hr);
                 hr.hit_object = Some(item.clone());
                 is_hit = true;

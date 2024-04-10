@@ -2,10 +2,10 @@ use cgmath::BaseFloat;
 use aika_math::Complex;
 
 /// None indicates a total internal reflection
-pub fn fresnel_dielectric<F>(cos_theta_i: F, ior_in: F, ior_transmit: F) -> Option<F> where F: BaseFloat {
+pub fn fresnel_dielectric<F>(cos_theta_i: F, ior_normal: F, ior_neg_normal: F) -> Option<F> where F: BaseFloat {
     let mut cos_theta_i = cos_theta_i.max(-F::one()).min(F::one());
 
-    let mut eta = ior_transmit / ior_in;
+    let mut eta = ior_neg_normal / ior_normal;
     if cos_theta_i < F::zero() {
         eta = F::one() / eta;
         cos_theta_i = -cos_theta_i;

@@ -42,22 +42,22 @@ impl<F> ShadeNormal<F> where F: BaseFloat + 'static {
             // let interpolated_normal = hit_triangle.interpolate_normal(uvw).unwrap().normalize();
             let interpolated_normal = hit_triangle.triangle.get_normal();
             // println!("hit point1: {:?}", hit_point);
-            // interpolated_normal
+            interpolated_normal
 
-            let point2 = hit_point - interpolated_normal * F::from(1e-6).unwrap();
-            let ray2 = Ray::new(point2, ray.direction);
-            let hit_result = tracing_service.hit_ray(&ray2, F::from(1e-6).unwrap(), F::infinity());
-            if let Some(r) = hit_result {
-                let hit_triangle = r.hit_object.as_ref().unwrap().clone();
-                let hit_point = r.get_hit_point(&ray);
-                // println!("hit point2: {:?}", hit_point);
-                let uvw = hit_triangle.triangle.get_bary_centric_coordinate(hit_point);
-                // let interpolated_normal = hit_triangle.interpolate_normal(uvw).unwrap().normalize();
-                let interpolated_normal = hit_triangle.triangle.get_normal();
-                interpolated_normal
-            } else {
-                Vector3::zero()
-            }
+            // let point2 = hit_point - interpolated_normal * F::from(1e-6).unwrap();
+            // let ray2 = Ray::new(point2, ray.direction);
+            // let hit_result = tracing_service.hit_ray(&ray2, F::from(1e-6).unwrap(), F::infinity());
+            // if let Some(r) = hit_result {
+            //     let hit_triangle = r.hit_object.as_ref().unwrap().clone();
+            //     let hit_point = r.get_hit_point(&ray);
+            //     // println!("hit point2: {:?}", hit_point);
+            //     let uvw = hit_triangle.triangle.get_bary_centric_coordinate(hit_point);
+            //     // let interpolated_normal = hit_triangle.interpolate_normal(uvw).unwrap().normalize();
+            //     let interpolated_normal = hit_triangle.triangle.get_normal();
+            //     interpolated_normal
+            // } else {
+            //     Vector3::zero()
+            // }
         } else {
             Vector3::zero()
         }

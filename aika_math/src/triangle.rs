@@ -1,12 +1,18 @@
+use std::any::TypeId;
 use cgmath::{BaseFloat, InnerSpace, Vector3};
-use num_traits::Float;
+use num_traits::{cast, Float};
 
 use crate::{AABB, Bounded, HaveCenter, HitRecord, Hittable, Ray};
+use crate::utils::{abs_vector3, cast_f64, difference_of_products, gamma, max_component_index, max_component_value, permute_vector3};
 
 pub struct Triangle<T> {
     pub a: Vector3<T>,
     pub b: Vector3<T>,
     pub c: Vector3<T>,
+}
+
+pub struct TriangleIntersectResult<F> {
+    pub barycentric_coordinates: [F; 3]
 }
 
 impl<F> Triangle<F> where F: BaseFloat {
@@ -41,42 +47,143 @@ impl<F> Bounded<AABB<F>> for Triangle<F> where F: BaseFloat {
     }
 }
 
-impl<F> Hittable for Triangle<F> where F: BaseFloat {
+// See https://pbr-book.org/4ed/Shapes/Triangle_Meshes
+impl<F> Hittable for Triangle<F> where F: BaseFloat + 'static {
     type FloatType = F;
     type HitObjectType = ();
 
     fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Self::HitObjectType>> {
         let n = self.get_normal();
 
-        let dn = ray.direction.dot(n);
-        if dn == F::zero() {
-            // ray is orthogonal to triangle normal
+        let e2 = self.c - self.a;
+        let e1 = self.b - self.a;
+        let zero = F::zero();
+
+        // if degenerate triangle
+        {
+            let cross = e1.cross(e2);
+            let length_sqr = cross.x * cross.x + cross.y * cross.y + cross.z * cross.z;
+            if length_sqr == F::zero() {
+                return None;
+            }
+        }
+
+        let p0t = self.a - ray.origin;
+        let p1t = self.b - ray.origin;
+        let p2t = self.c - ray.origin;
+
+        let kz = max_component_index(abs_vector3(ray.direction));
+        let kx = if kz == 2 { 0 } else { kz + 1 };
+        let ky = if kx == 2 { 0 } else { kx + 1 };
+        let d = permute_vector3(ray.direction, kx, ky, kz);
+        let mut p0t = permute_vector3(p0t, kx, ky, kz);
+        let mut p1t = permute_vector3(p1t, kx, ky, kz);
+        let mut p2t = permute_vector3(p2t, kx, ky, kz);
+
+        let sx = -d.x / d.z;
+        let sy = -d.y / d.z;
+        let sz = F::one() / d.z;
+        p0t.x += sx * p0t.z;
+        p0t.y += sy * p0t.z;
+        p1t.x += sx * p1t.z;
+        p1t.y += sy * p1t.z;
+        p2t.x += sx * p2t.z;
+        p2t.y += sy * p2t.z;
+
+        let mut e0 = difference_of_products(p1t.x, p2t.y, p1t.y, p2t.x);
+        let mut e1 = difference_of_products(p2t.x, p0t.y, p2t.y, p0t.x);
+        let mut e2 = difference_of_products(p0t.x, p1t.y, p0t.y, p1t.x);
+
+        // fallback to double precision edge functions
+        if TypeId::of::<F>() == TypeId::of::<f32>() && (e0 == F::zero() || e1 == F::zero() || e2 == F::zero()) {
+            let p2txp1ty = cast_f64(p2t.x) * cast_f64(p1t.y);
+            let p2typ1tx = cast_f64(p2t.y) * cast_f64(p1t.x);
+            e0 = F::from(p2typ1tx - p2txp1ty).unwrap();
+            let p0txp2ty = cast_f64(p0t.x) * cast_f64(p2t.y);
+            let p0typ2tx = cast_f64(p0t.y) * cast_f64(p2t.x);
+            e1 = F::from(p0typ2tx - p0txp2ty).unwrap();
+            let p1txp0ty = cast_f64(p1t.x) * cast_f64(p0t.y);
+            let p1typ0tx = cast_f64(p1t.y) * cast_f64(p0t.x);
+            e2 = F::from(p1typ0tx - p1txp0ty).unwrap();
+        }
+
+        if (e0 < zero || e1 < zero || e2 < zero) && (e0 > zero || e1 > zero || e2 > zero) {
+            return None;
+        }
+        let det = e0 + e1 + e2;
+        if det == zero {
             return None;
         }
 
-        let t = (self.a - ray.origin).dot(n) / dn;
-        if t < min || t > max {
+        p0t.z *= sz;
+        p1t.z *= sz;
+        p2t.z *= sz;
+        let t_scaled = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
+        if det < zero && (t_scaled >= min * det || t_scaled < max * det) {
+            return None;
+        } else if det > zero && (t_scaled <= min * det || t_scaled > max * det) {
             return None;
         }
-        let p = ray.origin + ray.direction * t;
 
-        let abxbp = (self.b - self.a).cross(p - self.b);
-        let bcxcp = (self.c - self.b).cross(p - self.c);
-        let caxap = (self.a - self.c).cross(p - self.a);
+        let inv_det = F::one() / det;
+        let b0 = e0 * inv_det;
+        let b1 = e1 * inv_det;
+        let b2 = e2 * inv_det;
+        let t = t_scaled * inv_det;
 
-        // check point is inside the triangle
-        let flag1 = abxbp.dot(bcxcp) >= F::zero();
-        let flag2 = abxbp.dot(caxap) >= F::zero();
-        if flag1 && flag2 {
-            Some(HitRecord {
-                t,
-                normal: Some(n),
-                back_facing: Some(n.dot(ray.direction) > F::zero()),
-                hit_object: None,
-            })
-        } else {
-            None
+        let max_zt = max_component_value(abs_vector3(Vector3::new(p0t.z, p1t.z, p2t.z)));
+        let delta_z = gamma::<F>(3) * max_zt;
+
+        let max_xt = max_component_value(abs_vector3(Vector3::new(p0t.x, p1t.x, p2t.x)));
+        let max_yt = max_component_value(abs_vector3(Vector3::new(p0t.y, p1t.y, p2t.y)));
+        let delta_x = gamma::<F>(5) * (max_xt + max_zt);
+        let delta_y = gamma::<F>(5) * (max_yt + max_zt);
+
+        let delta_e = F::from(2).unwrap() * (gamma::<F>(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
+        let max_e = max_component_value(abs_vector3(Vector3::new(e0, e1, e2)));
+        let delta_t = F::from(3).unwrap() * (gamma::<F>(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e) * inv_det.abs();
+        if t <= delta_t {
+            return None;
         }
+
+        Some(HitRecord {
+            t,
+            normal: Some(n),
+            back_facing: Some(n.dot(ray.direction) > F::zero()),
+            hit_object: None
+        })
+
+        // let dn = ray.direction.dot(n);
+        // if dn == F::zero() {
+        //     // ray is orthogonal to triangle normal
+        //     return None;
+        // }
+        //
+        // let t = (self.a - ray.origin).dot(n) / dn;
+        // if t < min || t > max {
+        //     return None;
+        // }
+        // let p = ray.origin + ray.direction * t;
+        // // let uvw = self.get_bary_centric_coordinate(p);
+        //
+        // let s = F::from(10).unwrap();
+        // let abxbp = ((self.b - self.a) * s).cross(p - self.b);
+        // let bcxcp = ((self.c - self.b) * s).cross(p - self.c);
+        // let caxap = ((self.a - self.c) * s).cross(p - self.a);
+        //
+        // // check point is inside the triangle
+        // let flag1 = abxbp.dot(bcxcp) >= F::zero();
+        // let flag2 = abxbp.dot(caxap) >= F::zero();
+        // if flag1 && flag2 {
+        //     Some(HitRecord {
+        //         t,
+        //         normal: Some(n),
+        //         back_facing: Some(n.dot(ray.direction) > F::zero()),
+        //         hit_object: None,
+        //     })
+        // } else {
+        //     None
+        // }
     }
 }
 
@@ -159,5 +266,22 @@ mod test {
         let hit = triangle.hit(&ray, 0.0, f32::infinity());
         assert!(hit.is_some());
         assert_eq!(hit.unwrap().t, 1.0);
+    }
+
+    #[test]
+    fn test_triangle_hit5() {
+        let triangle = Triangle {
+            a: Vector3 { x: 0.692910015_f32, y: 0.202948838, z: -2.20294881 },
+            b: Vector3 { x: 0.649519026, y: 0.265165031, z: -2.26516509 },
+            c: Vector3 { x: 0.678524971, y: 0.18861863, z: -2.36539531 },
+        };
+        let ray = Ray {
+            origin: Vector3 { x: -0.636595785_f32, y: -2.13779736, z: -0.960788309 },
+            direction: Vector3 { x: 0.437592089, y: 0.773531199, z: -0.458435059 },
+        };
+
+        let hit = triangle.hit(&ray, 0.0, f32::infinity());
+        assert!(hit.is_some());
+        // assert_eq!(hit.unwrap().t, 1.0);
     }
 }

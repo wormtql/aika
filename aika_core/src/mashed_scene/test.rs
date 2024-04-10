@@ -1,13 +1,16 @@
 use std::rc::Rc;
 use cgmath::Vector3;
 use aika_math::Triangle;
+use crate::component::Transform;
 use crate::scene::{GameObject, GameObjectInternal, Scene};
 use crate::mashed_scene::MashedScene;
 
 #[test]
 fn test_mashed_scene1() {
     let mut scene = Scene::new();
-    scene.add_game_object(GameObject::new_plane(1.0, 1.0));
+    let mut go = GameObject::new_plane(String::from("plane"), 1.0, 1.0);
+    go.add_component_owned::<Transform<f64>>(Transform::default());
+    scene.add_game_object(go);
 
     let mashed_scene = MashedScene::from_scene_bvh(&scene);
     assert_eq!(mashed_scene.get_triangle_count(), 2);

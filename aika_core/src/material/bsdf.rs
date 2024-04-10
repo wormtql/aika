@@ -1,5 +1,6 @@
 use cgmath::{BaseFloat, ElementWise, Vector3};
 use anyhow::Result;
+use crate::path_tracing::TracingService;
 
 /// all in local frame, and points out
 pub struct BSDFSampleResult<F> {
@@ -22,8 +23,12 @@ impl<F> BSDFSampleResult<F> where F: BaseFloat {
 pub trait BSDF<F> {
     /// All the directions are in tangent space
     /// We follow the convention that all directions points out of the shading point
-    fn evaluate(&self, dir1: Vector3<F>, dir2: Vector3<F>) -> Vector3<F>;
+    fn evaluate(&self, wi: Vector3<F>, wo: Vector3<F>) -> Option<Vector3<F>>;
 
     /// Returns (pdf, direction), in tangent space
-    fn sample_ray(&self, current_dir: Vector3<F>) -> Result<BSDFSampleResult<F>>;
+    fn sample_ray(&self, service: &mut TracingService<F>, current_dir: Vector3<F>) -> Option<BSDFSampleResult<F>>;
+
+    fn emit(&self, wo: Vector3<F>) -> Option<Vector3<F>> {
+        None
+    }
 }

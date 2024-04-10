@@ -4,6 +4,7 @@ use aika_math::{HitRecord, Hittable, Ray};
 use crate::lighting::{DirectionalLight, PointLight};
 use crate::mashed_scene::{MashedScene, MashedTriangle};
 use crate::scene::{GameObject, Scene};
+use crate::utils::RandomGenerator;
 
 pub struct IndependentPointLight<F> {
     pub color: Vector3<F>,
@@ -20,6 +21,7 @@ pub struct TracingService<F> {
     pub mashed_scene: MashedScene<F>,
     pub point_lights: Vec<IndependentPointLight<F>>,
     pub directional_lights: Vec<IndependentDirectionalLight<F>>,
+    random_generator: RandomGenerator<F>,
     // todo spot light
 
 }
@@ -32,6 +34,14 @@ impl<F> TracingService<F> where F: BaseFloat + 'static {
 
     pub fn hit_ray_0_inf(&self, ray: &Ray<F>) -> Option<HitRecord<F, Rc<MashedTriangle<F>>>> {
         self.hit_ray(ray, F::zero(), F::infinity())
+    }
+
+    pub fn random_0_1(&mut self) -> F {
+        self.random_generator.random()
+    }
+
+    pub fn random_range(&mut self, left: i32, right: i32) -> i32 {
+        self.random_generator.random_range(left, right)
     }
 
     pub fn new(scene: &Scene<F>) -> TracingService<F> {
@@ -69,7 +79,8 @@ impl<F> TracingService<F> where F: BaseFloat + 'static {
         TracingService {
             mashed_scene,
             point_lights,
-            directional_lights
+            directional_lights,
+            random_generator: RandomGenerator::new(10)
         }
     }
 }

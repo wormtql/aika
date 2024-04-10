@@ -12,6 +12,7 @@ use crate::material::{BSDF, Material};
 use crate::path_tracing::{ShadingContext, TracingService};
 use anyhow::Result;
 use indicatif::ProgressBar;
+use crate::f;
 use crate::path_tracing::shading_context::RayObjectStatus;
 
 pub struct SimplePathTracing<F> {
@@ -19,6 +20,7 @@ pub struct SimplePathTracing<F> {
 }
 
 fn float_to_u8<F>(f: F) -> u8 where F: BaseFloat {
+    let f = f.min(F::from(255).unwrap()).max(F::zero());
     f.to_u8().unwrap()
 }
 
@@ -43,83 +45,84 @@ fn dir_to_rgb<F>(x: Vector3<F>) -> Rgb<u8> where F: BaseFloat {
 }
 
 impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
-    pub fn calculate_directional_light_contribution(
-        tracing_service: &TracingService<F>,
-        shading_context: &ShadingContext<F>,
-        material: &Box<dyn BSDF<F>>,
-    ) -> Vector3<F> {
-        let mut result = Vector3::zero();
+    // pub fn calculate_directional_light_contribution(
+    //     tracing_service: &TracingService<F>,
+    //     shading_context: &ShadingContext<F>,
+    //     material: &Box<dyn BSDF<F>>,
+    // ) -> Vector3<F> {
+    //     let mut result = Vector3::zero();
+    //
+    //     let view_dir = -shading_context.ray_dir;
+    //
+    //     for directional_light in tracing_service.directional_lights.iter() {
+    //         let light_dir = -directional_light.direction;
+    //
+    //         if light_dir.dot(shading_context.normal) < F::zero() {
+    //             continue;
+    //         }
+    //
+    //         let shadow_ray = Ray::new(shading_context.point + shading_context.normal * F::from(1e-3).unwrap(), light_dir);
+    //         let shadow_ray_hit_result = tracing_service.hit_ray(&shadow_ray, F::zero(), F::infinity());
+    //         let half = F::from(0.5).unwrap();
+    //
+    //         if shadow_ray_hit_result.is_none() {
+    //             let light_dir_ts = shading_context.convert_vector_to_tangent_space(light_dir);
+    //             let view_dir_ts = shading_context.convert_vector_to_tangent_space(view_dir);
+    //             let brdf = material.evaluate(light_dir_ts, view_dir_ts);
+    //             let cos_theta = light_dir_ts.z;
+    //             // println!("{:?}", cos_theta);
+    //
+    //             let contribution = directional_light.color.mul_element_wise(brdf) * cos_theta;
+    //             result += contribution;
+    //             // return Vector3::new(F::one(), F::zero(), F::zero());
+    //         } else {
+    //             // return Vector3::new(F::zero(), F::one(), F::zero());
+    //         }
+    //     }
+    //
+    //     result
+    // }
 
-        let view_dir = -shading_context.ray_dir;
-
-        for directional_light in tracing_service.directional_lights.iter() {
-            let light_dir = -directional_light.direction;
-
-            if light_dir.dot(shading_context.normal) < F::zero() {
-                continue;
-            }
-
-            let shadow_ray = Ray::new(shading_context.point + shading_context.normal * F::from(1e-3).unwrap(), light_dir);
-            let shadow_ray_hit_result = tracing_service.hit_ray(&shadow_ray, F::zero(), F::infinity());
-            let half = F::from(0.5).unwrap();
-
-            if shadow_ray_hit_result.is_none() {
-                let light_dir_ts = shading_context.convert_vector_to_tangent_space(light_dir);
-                let view_dir_ts = shading_context.convert_vector_to_tangent_space(view_dir);
-                let brdf = material.evaluate(light_dir_ts, view_dir_ts);
-                let cos_theta = light_dir_ts.z;
-                // println!("{:?}", cos_theta);
-
-                let contribution = directional_light.color.mul_element_wise(brdf) * cos_theta;
-                result += contribution;
-                // return Vector3::new(F::one(), F::zero(), F::zero());
-            } else {
-                // return Vector3::new(F::zero(), F::one(), F::zero());
-            }
-        }
-
-        result
-    }
-
-    pub fn calculate_point_light_contribution(
-        tracing_service: &TracingService<F>,
-        shading_context: &ShadingContext<F>,
-        material: &Box<dyn BSDF<F>>,
-    ) -> Vector3<F> {
-        let mut result = Vector3::zero();
-
-        let view_dir = -shading_context.ray_dir;
-
-        for point_light in tracing_service.point_lights.iter() {
-            let light_dir = (point_light.position - shading_context.point).normalize();
-            let dis = point_light.position.distance(shading_context.point);
-            let shadow_ray = Ray::new(shading_context.point, light_dir);
-            let shadow_ray_hit_result = tracing_service.hit_ray(&shadow_ray, F::zero(), dis);
-            if shadow_ray_hit_result.is_none() {
-                let light_dir_ts = shading_context.convert_vector_to_tangent_space(light_dir);
-                let view_dir_ts = shading_context.convert_vector_to_tangent_space(view_dir);
-                let brdf = material.evaluate(light_dir_ts, view_dir_ts);
-                let cos_theta = light_dir_ts.z;
-
-                let attenuate = F::one() / (dis * dis);
-
-                // let contribution = point_light.color * attenuate * cos_theta * brdf;
-                let contribution = point_light.color;
-                result += contribution;
-            }
-        }
-
-        result
-    }
+    // pub fn calculate_point_light_contribution(
+    //     tracing_service: &TracingService<F>,
+    //     shading_context: &ShadingContext<F>,
+    //     material: &Box<dyn BSDF<F>>,
+    // ) -> Vector3<F> {
+    //     let mut result = Vector3::zero();
+    //
+    //     let view_dir = -shading_context.ray_dir;
+    //
+    //     for point_light in tracing_service.point_lights.iter() {
+    //         let light_dir = (point_light.position - shading_context.point).normalize();
+    //         let dis = point_light.position.distance(shading_context.point);
+    //         let shadow_ray = Ray::new(shading_context.point, light_dir);
+    //         let shadow_ray_hit_result = tracing_service.hit_ray(&shadow_ray, F::zero(), dis);
+    //         if shadow_ray_hit_result.is_none() {
+    //             let light_dir_ts = shading_context.convert_vector_to_tangent_space(light_dir);
+    //             let view_dir_ts = shading_context.convert_vector_to_tangent_space(view_dir);
+    //             let brdf = material.evaluate(light_dir_ts, view_dir_ts);
+    //             let cos_theta = light_dir_ts.z;
+    //
+    //             let attenuate = F::one() / (dis * dis);
+    //
+    //             // let contribution = point_light.color * attenuate * cos_theta * brdf;
+    //             let contribution = point_light.color;
+    //             result += contribution;
+    //         }
+    //     }
+    //
+    //     result
+    // }
 
     // return pdf, color
-    pub fn shade_one_ray(tracing_service: &TracingService<F>, ray: &Ray<F>, depth: usize, pixel: (usize, usize)) -> Result<Vector3<F>> {
+    pub fn shade_one_ray(tracing_service: &mut TracingService<F>, ray: &Ray<F>, depth: usize, pixel: (usize, usize)) -> Result<Vector3<F>> {
         // if depth == 0 {
         //     return Ok(Vector3::zero());
         // }
 
-        let env_light_color = Vector3::new(F::one(), F::one(), F::one());
+        // let env_light_color = Vector3::new(F::one(), F::one(), F::one());
         // let env_light_color = Vector3::new(F::zero(), F::zero(), F::zero());
+        let env_light_color = Vector3::new(f!(0.05), f!(0.05), f!(0.05));
         let vector_one = Vector3::new(F::one(), F::one(), F::one());
 
         let mut current_ray = ray.clone();
@@ -130,8 +133,8 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
         shading_context.push_ior(vector_one);
 
         for ray_iter in 0..depth {
-            let hit_result = tracing_service.hit_ray(&current_ray, F::from(1e-6).unwrap(), F::infinity());
-            // let hit_result = tracing_service.hit_ray(&current_ray, F::zero(), F::infinity());
+            // let hit_result = tracing_service.hit_ray(&current_ray, F::from(1e-6).unwrap(), F::infinity());
+            let hit_result = tracing_service.hit_ray(&current_ray, F::zero(), F::infinity());
             if let Some(r) = hit_result {
                 let hit_triangle = r.hit_object.as_ref().unwrap().clone();
                 let hit_point = r.get_hit_point(&current_ray);
@@ -140,11 +143,12 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
                 let interpolated_normal = hit_triangle.triangle.get_normal();
                 let go = hit_triangle.go.clone();
                 shading_context.go_stack.push(go.clone());
+                shading_context.hit_point_stack.push(hit_point);
 
                 if go.has_component::<Material<F>>() {
                     shading_context.normal = interpolated_normal;
                     let tangent = (hit_triangle.triangle.a - hit_triangle.triangle.b).normalize();
-                    let tangent = tangent - interpolated_normal * interpolated_normal.dot(tangent);
+                    let tangent = (tangent - interpolated_normal * interpolated_normal.dot(tangent)).normalize();
                     let bitangent = interpolated_normal.cross(tangent).normalize();
                     shading_context.tangent = tangent;
                     shading_context.bitangent = bitangent;
@@ -170,7 +174,26 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
 
                     if material.material_impl.has_bsdf() {
                         let bsdf = material.material_impl.get_bsdf(&shading_context).unwrap();
-                        let sample_result = bsdf.sample_ray(-shading_context.ray_dir_tangent_space)?;
+                        let wo = -shading_context.ray_dir_tangent_space;
+
+                        // account for emi
+                        {
+                            let emit = bsdf.emit(wo);
+                            if let Some(e) = emit {
+                                radiance += throughput.mul_element_wise(e);
+                            }
+                        }
+
+                        let sample_result = bsdf.sample_ray(tracing_service, wo);
+                        if sample_result.is_none() {
+                            // terminates here
+                            break;
+                        }
+                        let sample_result = sample_result.unwrap();
+                        // if wo.z <= F::zero() {
+                        //     println!("{:?}, iter: {}, pixel: {:?}, backface: {}", wo, ray_iter, pixel, back_face);
+                        // }
+
                         sampled_ray_dir_ws = shading_context.convert_vector_tangent_to_world(sample_result.direction).normalize();
                         throughput = throughput.mul_element_wise(sample_result.get_weight());
                         let next_point_bias = shading_context.convert_vector_tangent_to_world(sample_result.next_point);
@@ -246,23 +269,23 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
 
     pub fn trace(scene: &Scene<F>, width: usize, height: usize, camera: &PerspectiveCamera<F>, camera_transform: &Transform<F>) -> RgbImage {
         let mut result = RgbImage::new(width as u32, height as u32);
-        let tracing_service = TracingService::new(scene);
+        let mut tracing_service = TracingService::new(scene);
 
         let pb = ProgressBar::new((width * height) as u64);
 
         for (ray, (i, j)) in camera.iter_ray(&camera_transform, width, height) {
             let mut sum = Vector3::zero();
-            let spp = 512;
+            let spp = 64;
             for k in 0..spp {
-                let color = SimplePathTracing::shade_one_ray(&tracing_service, &ray, 3, (i, j)).unwrap();
+                let color = SimplePathTracing::shade_one_ray(&mut tracing_service, &ray, 5, (i, j)).unwrap();
                 // println!("{:?}", color.div_element_wise(pdf));
                 sum += color;
             }
             // println!("{:?}", sum);
             let color = sum / F::from(spp).unwrap();
-            let tone_mapped_color = tone_mapping(color);
+            // let tone_mapped_color = tone_mapping(color);
             // println!("{:?}", tone_mapped_color);
-            let rgb = vector3_to_rgb(tone_mapped_color);
+            let rgb = vector3_to_rgb(color);
             // println!("{:?}", rgb);
             result.put_pixel(i as u32, height as u32 - 1 - j as u32, rgb);
 

@@ -37,6 +37,7 @@ name = "aika_application"
 version = "0.1.0"
 dependencies = [
  "aika_core",
+ "aika_math",
  "anyhow",
  "cgmath",
 ]
@@ -54,6 +55,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "rand",
+ "rand_chacha",
  "smallvec",
  "tobj",
 ]
@@ -66,6 +68,7 @@ dependencies = [
  "cgmath",
  "num-derive",
  "num-traits",
+ "rand",
  "smallvec",
 ]
 

@@ -5,7 +5,7 @@ use aika_math::math_utils::reflect;
 use crate::material::{BSDF, BSDFSampleResult, MaterialTrait, VolumeTrait};
 use crate::utils::{fresnel_complex};
 use crate::f;
-use crate::path_tracing::ShadingContext;
+use crate::path_tracing::{ShadingContext, TracingService};
 
 #[derive(Clone)]
 pub struct ConductorBRDF<F> {
@@ -22,7 +22,7 @@ impl<F> ConductorBRDF<F> where F: BaseFloat {
 }
 
 impl<F> BSDF<F> for ConductorBRDF<F> where F: BaseFloat {
-    fn evaluate(&self, dir1: Vector3<F>, dir2: Vector3<F>) -> Vector3<F> {
+    fn evaluate(&self, dir1: Vector3<F>, dir2: Vector3<F>) -> Option<Vector3<F>> {
         // let dir1_r = reflect(dir1, Vector3::new(F::zero(), F::zero(), F::one()));
         // let vector_one = Vector3::new(F::one(), F::one(), F::one());
         // if dir1_r == dir2 {
@@ -33,10 +33,10 @@ impl<F> BSDF<F> for ConductorBRDF<F> where F: BaseFloat {
         // } else {
         //     Vector3::zero()
         // }
-        Vector3::zero()
+        Some(Vector3::zero())
     }
 
-    fn sample_ray(&self, current_dir: Vector3<F>) -> anyhow::Result<BSDFSampleResult<F>> {
+    fn sample_ray(&self, _service: &mut TracingService<F>, current_dir: Vector3<F>) -> Option<BSDFSampleResult<F>> {
         let reflect_dir = Vector3::new(-current_dir.x, -current_dir.y, current_dir.z);
 
         let vector_one = Vector3::new(F::one(), F::one(), F::one());
@@ -48,7 +48,7 @@ impl<F> BSDF<F> for ConductorBRDF<F> where F: BaseFloat {
         //     println!("{:?}", value);
         // }
 
-        Ok(BSDFSampleResult {
+        Some(BSDFSampleResult {
             // pdf: vector_one,
             direction: reflect_dir,
             // value,

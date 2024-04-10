@@ -4,14 +4,17 @@ pub fn reflect<F>(v: Vector3<F>, axis: Vector3<F>) -> Vector3<F> where F: BaseFl
     -v + axis * v.dot(axis) * F::from(2).unwrap()
 }
 
-pub fn refract<F: BaseFloat>(v: Vector3<F>, axis: Vector3<F>, ior_in: F, ior_transmit: F) -> Option<Vector3<F>> {
+pub fn refract<F: BaseFloat>(v: Vector3<F>, axis: Vector3<F>, ior_normal: F, ior_neg_normal: F) -> Option<Vector3<F>> {
     let mut cos_theta_i = v.dot(axis);
-    let mut eta = ior_transmit / ior_in;
+    let mut eta = ior_neg_normal / ior_normal;
     let mut axis = axis;
+    let mut v = v;
+    let backface = cos_theta_i < F::zero();
 
-    if cos_theta_i < F::zero() {
+    if backface {
         eta = F::one() / eta;
         cos_theta_i = -cos_theta_i;
+        // v = -v;
         axis = -axis;
     }
 
@@ -22,5 +25,11 @@ pub fn refract<F: BaseFloat>(v: Vector3<F>, axis: Vector3<F>, ior_in: F, ior_tra
     }
     let cos_theta_t = (F::one() - sin_theta_t_2).sqrt();
     let refract = -v / eta + axis * (cos_theta_i / eta - cos_theta_t);
-    Some(refract.normalize())
+    let ret = refract.normalize();
+    // Some(if backface {
+    //     -ret
+    // } else {
+    //     ret
+    // })
+    Some(ret)
 }

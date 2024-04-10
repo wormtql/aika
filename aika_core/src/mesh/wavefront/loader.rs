@@ -1,9 +1,9 @@
 use std::fmt::Debug;
 use std::io::BufReader;
 use std::path::Path;
-use crate::mesh::{CommonVertex, Mesh};
+use crate::mesh::{CommonVertex, Mesh, VertexBuffer};
 use anyhow::Result;
-use cgmath::{BaseFloat, Vector3};
+use cgmath::{BaseFloat, Vector2, Vector3};
 use num_traits::ToPrimitive;
 use tobj::{LoadError, LoadOptions};
 
@@ -29,7 +29,6 @@ impl WavefrontMeshLoader {
             if !model.mesh.normals.is_empty() {
                 v.normal = Some(get_vec3(&model.mesh.normals.as_slice(), i));
             }
-            // todo other attributes
             vertices.push(v);
         }
 
@@ -56,6 +55,7 @@ impl WavefrontMeshLoader {
     {
         let load_options = LoadOptions {
             triangulate: true,
+            single_index: true,
             ..Default::default()
         };
         let mut reader = BufReader::new(data);
@@ -104,6 +104,20 @@ impl WavefrontMeshLoader {
 
     pub fn sphere<F>() -> Result<Mesh<Vec<CommonVertex<F>>>> where F: BaseFloat {
         let obj_file = include_bytes!("./sphere.obj");
+        let result = WavefrontMeshLoader::load_wavefront_obj_memory(obj_file.as_slice())?;
+
+        Ok(result.into_iter().next().unwrap())
+    }
+
+    pub fn torus<F>() -> Result<Mesh<Vec<CommonVertex<F>>>> where F: BaseFloat {
+        let obj_file = include_bytes!("./torus.obj");
+        let result = WavefrontMeshLoader::load_wavefront_obj_memory(obj_file.as_slice())?;
+
+        Ok(result.into_iter().next().unwrap())
+    }
+
+    pub fn beveled_cube<F>() -> Result<Mesh<Vec<CommonVertex<F>>>> where F: BaseFloat {
+        let obj_file = include_bytes!("./cube.obj");
         let result = WavefrontMeshLoader::load_wavefront_obj_memory(obj_file.as_slice())?;
 
         Ok(result.into_iter().next().unwrap())

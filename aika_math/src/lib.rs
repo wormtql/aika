@@ -23,4 +23,5 @@ mod have_center;
 mod vector_ext;
 mod complex;
 pub mod math_utils;
-mod distribution;
+pub mod distribution;
+pub mod utils;

@@ -31,7 +31,7 @@ impl<F> Bounded<AABB<F>> for MashedTriangle<F> where F: BaseFloat {
     }
 }
 
-impl<F> Hittable for MashedTriangle<F> where F: BaseFloat {
+impl<F> Hittable for MashedTriangle<F> where F: BaseFloat + 'static {
     type FloatType = F;
     type HitObjectType = GameObject<F>;
 

@@ -6,6 +6,10 @@ pub use material::{MaterialTrait, Material};
 pub use absorption_volume::{AbsorptionVolume, AbsorptionVolumeMaterial};
 pub use conductor_brdf::{ConductorBRDF, ConductorBRDFMaterial};
 pub use dielectric_bsdf::{DielectricBSDF, DielectricMaterial};
+pub use rough_conductor_brdf::{RoughConductorBRDF, RoughConductorBRDFMaterial};
+pub use constants::MaterialConstants;
+pub use uniform_emit::{UniformEmit, UniformEmitMaterial};
+pub use rough_dielectric_bsdf::RoughDielectricBSDFMaterial;
 
 mod diffuse_brdf;
 mod material_type;
@@ -15,3 +19,7 @@ mod volume;
 mod absorption_volume;
 mod conductor_brdf;
 mod dielectric_bsdf;
+mod rough_conductor_brdf;
+mod constants;
+mod uniform_emit;
+mod rough_dielectric_bsdf;
