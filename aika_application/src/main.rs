@@ -6,7 +6,7 @@ use aika_core::path_tracing::{ShadeNormal, SimplePathTracing};
 use aika_core::scene::{GameObject, Scene};
 use anyhow::Result;
 use aika_core::component::{MeshFilter, Transform};
-use aika_core::lighting::DirectionalLight;
+use aika_core::lighting::{DirectionalLightComponent, SphericalLight, SphericalLightComponent};
 use aika_core::material::{AbsorptionVolumeMaterial, ConductorBRDF, DielectricMaterial, DiffuseBRDF, DiffuseBRDFMaterial, Material, MaterialConstants, MaterialType, RoughConductorBRDF, RoughConductorBRDFMaterial, RoughDielectricBSDFMaterial, UniformEmitMaterial};
 
 macro_rules! f {
@@ -87,12 +87,38 @@ fn get_sphere<F>() -> GameObject<F> where F: BaseFloat + 'static {
     game_object
 }
 
-fn main_with_type<F>() -> Result<()> where F: BaseFloat + 'static {
-    let mut scene = Scene::<F>::new();
+fn get_directional_light<F>() -> GameObject<F> where F: BaseFloat + 'static {
+    let light: DirectionalLightComponent<F> = DirectionalLightComponent::new(Vector3::new(f!(0.5), f!(0.6), f!(0.7)) * f!(1.0));
+    let mut go = GameObject::new_empty(String::from("light"));
+    go.add_component_owned(light);
 
-    scene.add_game_object(get_sphere());
-    scene.add_game_object(get_plane());
+    let transform: Transform<F> = Transform::new(
+        Vector3::zero(),
+        f!(1.0),
+        Euler::new(Deg(f!(180.0)), Deg(f!(45.0)), Deg(f!(45.0))).into()
+    );
+    go.add_component_owned(transform);
 
+    go
+}
+
+fn get_spherical_light<F>() -> GameObject<F> where F: BaseFloat + 'static {
+    let light: SphericalLightComponent<F> = SphericalLightComponent::new(f!(1), Vector3::new(f!(1), f!(1), f!(1)) * f!(2));
+    let mut go = GameObject::new_empty(String::from("spherical light"));
+    go.add_component_owned(light);
+
+    let transform: Transform<F> = Transform::new(
+        // Vector3::new(f!(0.0), f!(1.0), f!(-4)),
+        Vector3::new(f!(-1.0), f!(2.0), f!(-2)),
+        f!(1),
+        Quaternion::zero()
+    );
+    go.add_component_owned(transform);
+
+    go
+}
+
+fn get_torus<F: BaseFloat + 'static>() -> GameObject<F> {
     let mut game_object = GameObject::new_empty(String::from("sphere"));
 
     // transform
@@ -107,7 +133,7 @@ fn main_with_type<F>() -> Result<()> where F: BaseFloat + 'static {
 
     // mesh
     {
-        let mesh: DynMesh<F> = WavefrontMeshLoader::torus()?.to_dyn_mesh();
+        let mesh: DynMesh<F> = WavefrontMeshLoader::torus().unwrap().to_dyn_mesh();
         // let mesh: DynMesh<F> = WavefrontMeshLoader::suzanne()?.to_dyn_mesh();
         let mesh_filter = MeshFilter::new(mesh);
         game_object.add_component_owned(mesh_filter);
@@ -121,30 +147,27 @@ fn main_with_type<F>() -> Result<()> where F: BaseFloat + 'static {
         //     material_impl: Box::new(ConductorBRDF::gold_in_air())
         // };
         // let material = Material { material_impl: Box::new(DielectricMaterial::new(Vector3::new(f!(2.0), f!(2.0), f!(2.0)))) };
-        // let material = Material { material_impl: Box::new(RoughDielectricBSDFMaterial::new_single_ior(f!(0.01), f!(2))) };
+        // let material = Material { material_impl: Box::new(RoughDielectricBSDFMaterial::new_single_ior(f!(0.1), f!(2))) };
         // let material = Material { material_impl: Box::new(RoughDielectricBSDFMaterial::new(f!(0.01), Vector3::new(f!(1.5), f!(1.5), f!(1.5)))) };
         let material = Material { material_impl: Box::new(RoughConductorBRDFMaterial::new(f!(1), MaterialConstants::gold_ior())) };
         game_object.add_component_owned(material);
     }
 
+    game_object
+}
 
-    scene.add_game_object(game_object.clone());
+fn main_with_type<F>() -> Result<()> where F: BaseFloat + 'static {
+    let mut scene = Scene::<F>::new();
 
-    // directional light
-    // {
-    //     let light: DirectionalLight<F> = DirectionalLight::new(Vector3::new(f!(0.5), f!(0.6), f!(0.7)) * f!(1.0));
-    //     let mut go = GameObject::new_empty();
-    //     go.add_component_owned(light);
-    //
-    //     let transform: Transform<F> = Transform::new(
-    //         Vector3::zero(),
-    //         f!(1.0),
-    //         Euler::new(Deg(f!(180.0)), Deg(f!(45.0)), Deg(f!(45.0))).into()
-    //     );
-    //     go.add_component_owned(transform);
-    //
-    //     scene.add_game_object(go);
-    // }
+    // scene.add_game_object(get_sphere());
+    scene.add_game_object(get_plane());
+    // scene.add_game_object(get_directional_light());
+    scene.add_game_object(get_spherical_light());
+
+
+    scene.add_game_object(get_torus());
+
+
 
     let camera = PerspectiveCamera::new(f!(60.0 / 180.0 * 3.1415926), f!(0.01), f!(1000.0), f!(1.0));
     let camera_transform: Transform<F> = Transform::new(

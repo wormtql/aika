@@ -215,7 +215,8 @@ impl<F> SampleShape<F> for Triangle<F> where F: BaseFloat {
         let area = self.area();
         Some(SampleShapeResult {
             pdf: one / area,
-            position: point
+            position: point,
+            normal: self.get_normal(),
         })
     }
 }

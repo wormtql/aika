@@ -102,9 +102,11 @@ impl<F> SampleShape<F> for Sphere<F> where F: BaseFloat {
         let y = sin_theta * sin_phi;
         let z = cos_theta;
         let offset = Vector3::new(x, y, z) * self.radius;
+        let normal = offset.normalize();
         Some(SampleShapeResult {
-            pdf: F::one() / get_4pi(),
+            pdf: F::one() / self.area(),
             position: self.center + offset,
+            normal,
         })
     }
 }

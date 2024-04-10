@@ -34,6 +34,7 @@ pub trait HaveArea<F> {
 pub struct SampleShapeResult<F> {
     pub position: Vector3<F>,
     pub pdf: F,
+    pub normal: Vector3<F>,
 }
 
 pub trait SampleShape<F> {

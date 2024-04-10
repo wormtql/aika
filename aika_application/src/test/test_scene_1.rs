@@ -6,7 +6,7 @@ use aika_core::path_tracing::{ShadeNormal, SimplePathTracing, TracingService};
 use aika_core::scene::{GameObject, Scene};
 use anyhow::Result;
 use aika_core::component::{MeshFilter, Transform};
-use aika_core::lighting::DirectionalLight;
+use aika_core::lighting::DirectionalLightComponent;
 use aika_core::material::{AbsorptionVolumeMaterial, ConductorBRDF, DielectricMaterial, DiffuseBRDF, DiffuseBRDFMaterial, Material, MaterialConstants, MaterialType, RoughConductorBRDF, RoughConductorBRDFMaterial, UniformEmitMaterial};
 use aika_math::Ray;
 
