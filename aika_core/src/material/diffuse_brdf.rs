@@ -28,6 +28,7 @@ impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat + 'static {
     fn sample_ray(&self, service: &mut TracingService<F>, current_dir: Vector3<F>) -> Option<BSDFSampleResult<F>> {
         if current_dir.z < F::zero() {
             println!("current dir: {:?}", current_dir);
+            return None;
         }
         // assert!(current_dir.z >= F::zero());
         let a = service.random_0_1();

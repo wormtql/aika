@@ -10,6 +10,7 @@ pub use rough_conductor_brdf::{RoughConductorBRDF, RoughConductorBRDFMaterial};
 pub use constants::MaterialConstants;
 pub use uniform_emit::{UniformEmit, UniformEmitMaterial};
 pub use rough_dielectric_bsdf::RoughDielectricBSDFMaterial;
+pub use metallic_roughness_brdf::*;
 
 mod diffuse_brdf;
 mod material_type;
@@ -23,3 +24,4 @@ mod rough_conductor_brdf;
 mod constants;
 mod uniform_emit;
 mod rough_dielectric_bsdf;
+mod metallic_roughness_brdf;

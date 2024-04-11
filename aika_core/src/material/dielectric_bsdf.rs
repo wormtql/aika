@@ -1,6 +1,6 @@
 use cgmath::{BaseFloat, ElementWise, Vector3};
 use num_traits::Zero;
-use aika_math::math_utils::refract;
+use aika_math::utils::refract;
 use crate::f;
 use crate::material::{BSDF, BSDFSampleResult, MaterialTrait, VolumeTrait};
 use crate::path_tracing::{RayObjectStatus, ShadingContext, TracingService};

@@ -39,11 +39,11 @@ impl<F> Light<F> for SphericalLight<F> where F: BaseFloat + 'static {
         let wi = dir.normalize();
         let length = length_vector3(dir);
 
-        if sample_point.normal.dot(wi) > F::zero() {
-            return None;
-        }
+        // if sample_point.normal.dot(wi) > F::zero() {
+        //     return None;
+        // }
 
-        let pdf = sample_point.pdf * (length * length) / (sample_point.normal.dot(wi).abs());
+        let pdf = sample_point.pdf * (length * length) / (sample_point.normal.dot(wi).abs()) * F::from(2).unwrap();
         Some(LightSampleResult {
             wi,
             pdf: Vector3::new(pdf, pdf, pdf),

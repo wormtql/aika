@@ -12,6 +12,7 @@ use crate::material::{BSDF, Material};
 use crate::path_tracing::{ShadingContext, TracingService};
 use anyhow::Result;
 use indicatif::ProgressBar;
+use aika_math::utils::is_same_hemisphere;
 use crate::f;
 use crate::path_tracing::shading_context::RayObjectStatus;
 
@@ -119,8 +120,9 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
                                 if result.wi.dot(shading_context.normal) > F::zero() {
                                     let contribution = result.radiance.div_element_wise(result.pdf);
                                     let light_dir_ts = shading_context.convert_vector_to_tangent_space(result.wi);
-                                    let f = bsdf.evaluate(wo, light_dir_ts);
+                                    let f = bsdf.evaluate(light_dir_ts, wo);
                                     if let Some(f) = f {
+                                        // let shadow_ray_offset = if is_same_hemisphere()
                                         let shadow_ray = Ray::new(hit_point, result.wi);
                                         let ray_transmission = tracing_service.get_ray_transmission(&shadow_ray, f!(1e-3), result.distance);
                                         // let ray_transmission = F::one();
