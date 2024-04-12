@@ -125,29 +125,108 @@ impl<F> Hittable<F, ()> for AABB<F> where F: BaseFloat {
         let bb_max = self.max();
         let bb_min = self.min();
 
-        let mut t_min = min;
-        let mut t_max = max;
-        for i in 0..3 {
-            let inv_d = F::one() / ray.direction[i];
-            let mut t0 = (bb_min[i] - ray.origin[i]) * inv_d;
-            let mut t1 = (bb_max[i] - ray.origin[i]) * inv_d;
-            if inv_d < F::zero() {
-                let temp = t0;
-                t0 = t1;
-                t1 = temp;
-            }
-            t_min = t0.max(t_min);
-            t_max = t1.min(t_max);
-            if t_max < t_min {
+        // let mut t_min = min;
+        // let mut t_max = max;
+        // for i in 0..3 {
+        //     let inv_d = F::one() / ray.direction[i];
+        //     let mut t0 = (bb_min[i] - ray.origin[i]) * inv_d;
+        //     let mut t1 = (bb_max[i] - ray.origin[i]) * inv_d;
+        //     if inv_d < F::zero() {
+        //         let temp = t0;
+        //         t0 = t1;
+        //         t1 = temp;
+        //     }
+        //     t_min = t0.max(t_min);
+        //     t_max = t1.min(t_max);
+        //     if t_max < t_min {
+        //         return None;
+        //     }
+        // }
+        // Some(HitRecord {
+        //     t: t_min,
+        //     normal: None,
+        //     back_facing: None,
+        //     hit_object: None
+        // })
+
+        let mut t_x_min: F;
+        let mut t_x_max: F;
+
+        if ray.direction.x == F::zero() {
+            if ray.origin.x >= bb_max.x || ray.origin.x <= bb_min.x {
                 return None;
             }
+            t_x_min = F::neg_infinity();
+            t_x_max = F::infinity();
+        } else {
+            t_x_min = (bb_min.x - ray.origin.x) / ray.direction.x;
+            t_x_max = (bb_max.x - ray.origin.x) / ray.direction.x;
+            if t_x_min > t_x_max {
+                let temp = t_x_min;
+                t_x_min = t_x_max;
+                t_x_max = temp;
+            }
         }
-        Some(HitRecord {
-            t: t_min,
-            normal: None,
-            back_facing: None,
-            hit_object: None
-        })
+
+        let mut t_y_min: F;
+        let mut t_y_max: F;
+        if ray.direction.y == F::zero() {
+            if ray.origin.y >= bb_max.y || ray.origin.y <= bb_min.y {
+                return None;
+            }
+            t_y_min = F::neg_infinity();
+            t_y_max = F::infinity();
+        } else {
+            t_y_min = (bb_min.y - ray.origin.y) / ray.direction.y;
+            t_y_max = (bb_max.y - ray.origin.y) / ray.direction.y;
+            if t_y_min > t_y_max {
+                let temp = t_y_min;
+                t_y_min = t_y_max;
+                t_y_max = temp;
+            }
+        }
+
+        let mut t_z_min: F;
+        let mut t_z_max: F;
+        if ray.direction.z == F::zero() {
+            if ray.origin.z >= bb_max.z || ray.origin.z <= bb_min.z {
+                return None;
+            }
+            t_z_min = F::neg_infinity();
+            t_z_max = F::infinity();
+        } else {
+            t_z_min = (bb_min.z - ray.origin.z) / ray.direction.z;
+            t_z_max = (bb_max.z - ray.origin.z) / ray.direction.z;
+            if t_z_min > t_z_max {
+                let temp = t_z_min;
+                t_z_min = t_z_max;
+                t_z_max = temp;
+            }
+        }
+
+        let interval_min = t_x_min.max(t_y_min).max(t_z_min);
+        let interval_max = t_x_max.min(t_y_max).min(t_z_max);
+        let interval_min2 = interval_min.max(min);
+        let interval_max2 = interval_max.min(max);
+
+        if interval_min2 <= interval_max2 {
+            // let t;
+            // if interval_min >= interval_min2 {
+            //     t = interval_min;
+            // } else if interval_max <= interval_max2 {
+            //     t = interval_max;
+            // } else {
+            //     return None;
+            // }
+            Some(HitRecord {
+                t: interval_min2,
+                normal: None,
+                back_facing: None,
+                hit_object: None,
+            })
+        } else {
+            None
+        }
     }
 }
 
@@ -186,7 +265,7 @@ mod test {
     fn test_aabb_hit1() {
         let bb: AABB<f32> = AABB::unit();
         let ray = Ray {
-            origin: Vector3 { x: 0.0, y: 0.0, z: 0.0 },
+            origin: Vector3 { x: 0.0, y: 0.0, z: -1.0 },
             direction: Vector3 { x: 0.0, y: 0.0, z: 1.0 }.normalize(),
         };
 
@@ -199,12 +278,13 @@ mod test {
     fn test_aabb_hit2() {
         let bb = AABB::unit();
         let ray = Ray {
-            origin: Vector3 { x: 0.0, y: 0.0, z: 0.0 },
-            direction: Vector3 { x: 1.0, y: 1.0, z: 1.0 }.normalize(),
+            origin: Vector3 { x: 1_f32, y: 1.0, z: 1.0 },
+            direction: -Vector3 { x: 1.0, y: 1.0, z: 1.0 }.normalize(),
         };
 
         let hit = bb.hit(&ray, 0.0, f32::infinity());
         assert!(hit.is_some());
+        // assert_eq!(hit.unwrap().t, 0.8660254);
         assert!((hit.unwrap().t - 0.8660254).abs() < 1e-6);
     }
 
@@ -253,7 +333,7 @@ mod test {
         };
 
         let hit = bb.hit(&ray, -f32::infinity(), 0.0);
-        assert!(hit.is_some());
+        assert!(hit.is_none());
     }
 
     #[test]
@@ -265,7 +345,8 @@ mod test {
         };
 
         let hit = bb.hit(&ray, 0.0, 0.25);
-        assert!(hit.is_none());
+        assert!(hit.is_some());
+        assert_eq!(hit.unwrap().t, 0.0);
     }
 
     // Test hit from inside an aabb
@@ -280,6 +361,18 @@ mod test {
         let hit = bb.hit(&ray, 0.0, f32::infinity());
         assert!(hit.is_some());
         let hit = hit.unwrap();
-        assert_eq!(hit.t, 0.5);
+        assert_eq!(hit.t, 0.0);
+    }
+
+    #[test]
+    fn test_aabb_hit9() {
+        let bb: AABB<f32> = AABB::unit();
+        let ray = Ray {
+            origin: Vector3 { x: 2.0, y: 0.0, z: 0.0 },
+            direction: Vector3 { x: 0.0, y: 0.0, z: 1.0 }.normalize(),
+        };
+
+        let hit = bb.hit(&ray, 0.0, f32::infinity());
+        assert!(hit.is_none());
     }
 }

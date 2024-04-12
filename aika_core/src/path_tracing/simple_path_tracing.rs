@@ -133,13 +133,11 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
                                         } else {
                                             return Ok(Vector3::new(F::one(), F::one(), F::one()));
                                         }
-                                        // let contribution = f.mul_element_wise(result.radiance).mul_element_wise(result.weight) * light_dir_ts.z.abs();
-                                        // radiance += throughput.mul_element_wise(contribution) * ray_transmission;
+                                        let contribution = f.mul_element_wise(result.radiance).mul_element_wise(result.weight) * light_dir_ts.z.abs();
+                                        radiance += throughput.mul_element_wise(contribution) * ray_transmission;
                                     } else {
                                         return Ok(Vector3::new(F::one(), F::zero(), F::one()));
                                     }
-                                } else {
-                                    return Ok(Vector3::new(F::one(), F::zero(), F::zero()));
                                 }
                             }
                         }
