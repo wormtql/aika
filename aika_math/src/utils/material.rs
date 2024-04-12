@@ -16,7 +16,6 @@ pub fn fresnel_schlick_approximate<F: BaseFloat>(f0: Vector3<F>, cos_theta_i: F)
 }
 
 pub fn smith_g2_lagarde<F: BaseFloat>(wi: Vector3<F>, wo: Vector3<F>, roughness: F) -> F {
-    assert!(is_same_hemisphere_canonical(wi, wo));
     let ui = wi.z.abs();
     let uo = wo.z.abs();
     let a2 = roughness * roughness;

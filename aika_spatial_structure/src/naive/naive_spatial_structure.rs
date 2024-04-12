@@ -3,16 +3,18 @@ use std::rc::Rc;
 use cgmath::BaseFloat;
 use aika_math::{HitRecord, Hittable, Ray};
 
-pub struct NaiveSpatialStructure<F, G> {
+pub struct NaiveSpatialStructure<F, G, GH> {
     pub items: Vec<Rc<G>>,
     _float_phantom: PhantomData<F>,
+    _geometry_hit_data: PhantomData<GH>,
 }
 
-impl<F, G> NaiveSpatialStructure<F, G> {
+impl<F, G, GH> NaiveSpatialStructure<F, G, GH> {
     pub fn new() -> Self {
         Self {
             items: Vec::new(),
-            _float_phantom: PhantomData
+            _float_phantom: PhantomData,
+            _geometry_hit_data: PhantomData,
         }
     }
 
@@ -27,10 +29,10 @@ impl<F, G> NaiveSpatialStructure<F, G> {
     }
 }
 
-impl<F, G> Hittable<F, Rc<G>> for NaiveSpatialStructure<F, G>
+impl<F, G, GH> Hittable<F, Rc<G>> for NaiveSpatialStructure<F, G, GH>
 where
     F: BaseFloat,
-    G: Hittable<F, ()>
+    G: Hittable<F, GH>
 {
     fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, Rc<G>>> {
         let mut max = max;
@@ -39,7 +41,7 @@ where
         for (index, item) in self.items.iter().enumerate() {
             let hit_result = item.hit(&ray, min, max);
             if let Some(r) = hit_result {
-                // max = r.t;
+                max = r.t;
                 r.copy_except_hit_object(&mut hr);
                 hr.hit_object = Some(item.clone());
                 is_hit = true;

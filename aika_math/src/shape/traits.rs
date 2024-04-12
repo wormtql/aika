@@ -1,4 +1,4 @@
-use cgmath::{BaseFloat, Matrix4, Vector3, Vector4};
+use cgmath::{BaseFloat, Matrix4, Vector2, Vector3, Vector4};
 use crate::AABB;
 
 pub trait HaveCenter<F> {
@@ -39,6 +39,10 @@ pub struct SampleShapeResult<F> {
 
 pub trait SampleShape<F> {
     fn sample_shape(&self, r1: F, r2: F) -> Option<SampleShapeResult<F>>;
+
+    fn sample_shape_solid_angle(&self, random: Vector2<F>, position: Vector3<F>, normal: Vector3<F>) -> Option<SampleShapeResult<F>> {
+        None
+    }
 }
 
 pub trait PrimitiveTrait<F>: Bounded<AABB<F>> + HaveCenter<F> + HaveArea<F> + SampleShape<F> {}

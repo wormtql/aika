@@ -1,8 +1,9 @@
-use cgmath::{BaseFloat, InnerSpace, Vector3};
-use aika_math::{SampleShape, Sphere};
-use aika_math::utils::length_vector3;
+use cgmath::{BaseFloat, InnerSpace, Vector2, Vector3};
+use aika_math::{HaveArea, SampleShape, Sphere};
+use aika_math::utils::{length_square_vector3, length_vector3};
 use crate::component::ComponentData;
-use crate::lighting::{Light, LightSampleResult};
+use crate::f;
+use crate::lighting::{Light, LightSampleContext, LightSampleResult};
 use crate::path_tracing::TracingService;
 
 pub struct SphericalLightComponent<F> {
@@ -31,24 +32,35 @@ impl<F> Light<F> for SphericalLight<F> where F: BaseFloat + 'static {
         Some(self.color)
     }
 
-    fn sample_light(&self, service: &TracingService<F>, position: Vector3<F>) -> Option<LightSampleResult<F>> {
+    fn sample_light(&self, service: &TracingService<F>, context: &LightSampleContext<F>) -> Option<LightSampleResult<F>> {
         let sphere = Sphere::new(self.position, self.radius);
-        let sample_point = sphere.sample_shape(service.random_0_1(), service.random_0_1())?;
+        let sample_result = sphere.sample_shape_solid_angle(
+            Vector2::new(service.random_0_1(), service.random_0_1()),
+            context.position,
+            context.normal
+        )?;
+        // let sample_result = sphere.sample_shape(service.random_0_1(), service.random_0_1())?;
 
-        let dir = sample_point.position - position;
+        let dir = sample_result.position - context.position;
+        let length2 = length_square_vector3(dir);
+        if length2 == F::zero() {
+            return None;
+        }
         let wi = dir.normalize();
-        let length = length_vector3(dir);
 
         // if sample_point.normal.dot(wi) > F::zero() {
         //     return None;
         // }
 
-        let pdf = sample_point.pdf * (length * length) / (sample_point.normal.dot(wi).abs()) * F::from(2).unwrap();
+        // let w = sample_point.normal.dot(wi).abs() / (length * length) * area * f!(0.5);
+        // let w = area * f!(0.5);
+        let w = F::one() / sample_result.pdf;
         Some(LightSampleResult {
             wi,
-            pdf: Vector3::new(pdf, pdf, pdf),
+            weight: Vector3::new(w, w, w),
             radiance: self.color,
-            distance: length,
+            distance: length2.sqrt(),
+            point: Some(sample_result.position),
         })
     }
 

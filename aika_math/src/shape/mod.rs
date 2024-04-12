@@ -5,6 +5,7 @@ pub use hittable::{HitRecord, Hittable};
 pub use ray::Ray;
 pub use sphere::Sphere;
 pub use triangle::Triangle;
+pub use rectangle::Rectangle;
 
 mod traits;
 mod aabb;
@@ -13,3 +14,4 @@ mod hittable;
 mod ray;
 mod sphere;
 mod triangle;
+mod rectangle;

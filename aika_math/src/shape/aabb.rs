@@ -3,6 +3,7 @@ use cgmath::{BaseFloat, Matrix4, Vector3, Vector4};
 use num_traits::{Float, Num, One, Zero};
 
 use crate::*;
+use crate::utils::{max_vector3, min_vector3};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AABB<T> {
@@ -81,18 +82,11 @@ impl<T> AABB<T> where T: BaseFloat {
         let min1 = self.min();
         let max2 = other.max();
         let min2 = other.min();
-        let max = Vector3::new(
-            T::max(max1.x, max2.x),
-            T::max(max1.y, max2.y),
-            T::max(max1.z, max2.z),
-        );
-        let min = Vector3::new(
-            T::min(min1.x, min2.x),
-            T::min(min1.y, min2.y),
-            T::min(min1.z, min2.z),
-        );
 
-        Self::from_min_max(min, max)
+        let new_max = max_vector3(max1, max2);
+        let new_min = min_vector3(min1, min2);
+
+        Self::from_min_max(new_min, new_max)
     }
 
     pub fn get_vertices(&self) -> [Vector3<T>; 8] {
@@ -128,78 +122,32 @@ impl<T> Transformable<T> for AABB<T> where T: BaseFloat {
 
 impl<F> Hittable<F, ()> for AABB<F> where F: BaseFloat {
     fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, ()>> {
-        let mut t_x_min: F;
-        let mut t_x_max: F;
-
         let bb_max = self.max();
         let bb_min = self.min();
 
-        if ray.direction.x == F::zero() {
-            t_x_min = F::neg_infinity();
-            t_x_max = F::infinity();
-        } else {
-            t_x_min = (bb_min.x - ray.origin.x) / ray.direction.x;
-            t_x_max = (bb_max.x - ray.origin.x) / ray.direction.x;
-            if t_x_min > t_x_max {
-                let temp = t_x_min;
-                t_x_min = t_x_max;
-                t_x_max = temp;
+        let mut t_min = min;
+        let mut t_max = max;
+        for i in 0..3 {
+            let inv_d = F::one() / ray.direction[i];
+            let mut t0 = (bb_min[i] - ray.origin[i]) * inv_d;
+            let mut t1 = (bb_max[i] - ray.origin[i]) * inv_d;
+            if inv_d < F::zero() {
+                let temp = t0;
+                t0 = t1;
+                t1 = temp;
             }
-        }
-
-        let mut t_y_min: F;
-        let mut t_y_max: F;
-        if ray.direction.y == F::zero() {
-            t_y_min = F::neg_infinity();
-            t_y_max = F::infinity();
-        } else {
-            t_y_min = (bb_min.y - ray.origin.y) / ray.direction.y;
-            t_y_max = (bb_max.y - ray.origin.y) / ray.direction.y;
-            if t_y_min > t_y_max {
-                let temp = t_y_min;
-                t_y_min = t_y_max;
-                t_y_max = temp;
-            }
-        }
-
-        let mut t_z_min: F;
-        let mut t_z_max: F;
-        if ray.direction.z == F::zero() {
-            t_z_min = F::neg_infinity();
-            t_z_max = F::infinity();
-        } else {
-            t_z_min = (bb_min.z - ray.origin.z) / ray.direction.z;
-            t_z_max = (bb_max.z - ray.origin.z) / ray.direction.z;
-            if t_z_min > t_z_max {
-                let temp = t_z_min;
-                t_z_min = t_z_max;
-                t_z_max = temp;
-            }
-        }
-
-        let interval_min = t_x_min.max(t_y_min).max(t_z_min);
-        let interval_max = t_x_max.min(t_y_max).min(t_z_max);
-        let interval_min2 = interval_min.max(min);
-        let interval_max2 = interval_max.min(max);
-
-        if interval_min2 <= interval_max2 {
-            let t;
-            if interval_min >= interval_min2 {
-                t = interval_min;
-            } else if interval_max <= interval_max2 {
-                t = interval_max;
-            } else {
+            t_min = t0.max(t_min);
+            t_max = t1.min(t_max);
+            if t_max < t_min {
                 return None;
             }
-            Some(HitRecord {
-                t,
-                normal: None,
-                back_facing: None,
-                hit_object: None,
-            })
-        } else {
-            None
         }
+        Some(HitRecord {
+            t: t_min,
+            normal: None,
+            back_facing: None,
+            hit_object: None
+        })
     }
 }
 
@@ -320,6 +268,7 @@ mod test {
         assert!(hit.is_none());
     }
 
+    // Test hit from inside an aabb
     #[test]
     fn test_aabb_hit8() {
         let bb: AABB<f32> = AABB::unit();
@@ -330,5 +279,7 @@ mod test {
 
         let hit = bb.hit(&ray, 0.0, f32::infinity());
         assert!(hit.is_some());
+        let hit = hit.unwrap();
+        assert_eq!(hit.t, 0.5);
     }
 }

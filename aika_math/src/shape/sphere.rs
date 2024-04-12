@@ -1,8 +1,8 @@
 use std::f64::consts::PI;
-use cgmath::{BaseFloat, InnerSpace, Matrix4, SquareMatrix, Vector3};
+use cgmath::{BaseFloat, InnerSpace, Matrix4, SquareMatrix, Vector2, Vector3};
 use num_traits::Float;
 use crate::*;
-use crate::utils::{get_2pi, get_4pi};
+use crate::utils::{compose_frame, get_2pi, get_4pi, get_spherical_direction, length_square_vector3, length_vector3, safe_sqrt, sqr};
 
 #[derive(Debug)]
 pub struct Sphere<T> {
@@ -107,6 +107,62 @@ impl<F> SampleShape<F> for Sphere<F> where F: BaseFloat {
             pdf: F::one() / self.area(),
             position: self.center + offset,
             normal,
+        })
+    }
+
+    // See https://pbr-book.org/4ed/Shapes/Spheres
+    fn sample_shape_solid_angle(&self, random: Vector2<F>, position: Vector3<F>, normal: Vector3<F>) -> Option<SampleShapeResult<F>> {
+        let dis_point_2 = length_square_vector3(self.center - position);
+        if dis_point_2 <= sqr(self.radius) {
+            // the point is inside the sphere
+            let sample_by_area = self.sample_shape(random[0], random[1])?;
+            let wi = sample_by_area.position - position;
+            let dis2 = length_square_vector3(wi);
+            if dis2 == F::zero() {
+                return None;
+            }
+            let wi = wi.normalize();
+            let normal_dot_wi = sample_by_area.normal.dot(-wi).abs();
+            if normal_dot_wi == F::zero() {
+                return None;
+            }
+            let pdf_solid_angle = sample_by_area.pdf * (dis2 / normal_dot_wi);
+            return Some(SampleShapeResult {
+                position: sample_by_area.position,
+                pdf: pdf_solid_angle,
+                normal: sample_by_area.normal,
+            });
+        }
+
+        let center_to_position = position - self.center;
+
+        let sin_theta_max = self.radius / length_vector3(center_to_position);
+        let sin_theta_max_2 = sin_theta_max * sin_theta_max;
+        let cos_theta_max = safe_sqrt(F::one() - sin_theta_max_2);
+        let mut one_minus_cos_theta_max = F::one() - cos_theta_max;
+
+        let mut cos_theta = (cos_theta_max - F::one()) * random[0] + F::one();
+        let mut sin_theta_2 = F::one() - cos_theta * cos_theta;
+        if sin_theta_2 < F::from(0.00068523).unwrap() {
+            sin_theta_2 = sin_theta_max_2 * random[0];
+            cos_theta = (F::one() - sin_theta_2).sqrt();
+            one_minus_cos_theta_max = sin_theta_max_2 / F::from(2).unwrap();
+        }
+
+        let cos_alpha = sin_theta_2 / sin_theta_max + cos_theta * safe_sqrt(F::one() - sin_theta_2 / sqr(sin_theta_max));
+        let sin_alpha = safe_sqrt(F::one() - sqr(cos_alpha));
+
+        let phi = random[1] * get_2pi();
+        let dir_canonical_space = get_spherical_direction(sin_alpha, cos_alpha, phi);
+        let (_world_to_local, local_to_world) = compose_frame(center_to_position);
+        let dir_orient_space = local_to_world * dir_canonical_space;
+        let point_on_sphere = self.center + dir_orient_space * self.radius;
+        let pdf = F::one() / (get_2pi::<F>() * one_minus_cos_theta_max);
+
+        Some(SampleShapeResult {
+            position: point_on_sphere,
+            pdf,
+            normal: dir_orient_space
         })
     }
 }

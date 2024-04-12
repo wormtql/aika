@@ -2,7 +2,7 @@ use std::rc::Rc;
 use cgmath::BaseFloat;
 use num_traits::Float;
 use aika_math::{AABB, HitRecord, Hittable, Ray, Triangle};
-use crate::scene::Scene;
+use crate::scene::{GameObject, Scene};
 use aika_spatial_structure::bvh::{BVHBuilder, BVHTree, DefaultBVHSplitHeuristic};
 use aika_spatial_structure::naive::NaiveSpatialStructure;
 use crate::component::{MeshFilter, Transform};
@@ -52,11 +52,11 @@ impl<F> MashedScene<F> where F: BaseFloat + 'static {
         let triangle_count = mashed_triangles.len();
 
         let mut split_heuristic = DefaultBVHSplitHeuristic::default();
-        let mut builder = BVHBuilder::new(4);
+        let mut builder: BVHBuilder<F, AABB<F>, MashedTriangle<F>, GameObject<F>> = BVHBuilder::new(4);
         builder.add_objects(&mashed_triangles);
         let tree = builder.build(&mut split_heuristic);
 
-        let mut naive_structure: NaiveSpatialStructure<F, MashedTriangle<F>> = NaiveSpatialStructure::new();
+        let mut naive_structure: NaiveSpatialStructure<F, MashedTriangle<F>, GameObject<F>> = NaiveSpatialStructure::new();
         naive_structure.add_objects(mashed_triangles);
 
         MashedScene {

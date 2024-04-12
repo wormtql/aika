@@ -10,3 +10,4 @@ mod punctual_light;
 mod traits;
 mod uniform_light_sampler;
 mod spherical_light;
+mod rectangular_light;

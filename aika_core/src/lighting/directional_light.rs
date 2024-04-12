@@ -1,6 +1,6 @@
 use cgmath::{BaseFloat, Vector3};
 use crate::component::ComponentData;
-use crate::lighting::{Light, LightSampleResult};
+use crate::lighting::{Light, LightSampleContext, LightSampleResult};
 use crate::path_tracing::TracingService;
 
 /// A directional light will be pointing at (0, 0, 1) by default
@@ -29,12 +29,13 @@ impl<F> Light<F> for DirectionalLight<F> where F: BaseFloat {
         None
     }
 
-    fn sample_light(&self, service: &TracingService<F>, position: Vector3<F>) -> Option<LightSampleResult<F>> {
+    fn sample_light(&self, service: &TracingService<F>, context: &LightSampleContext<F>) -> Option<LightSampleResult<F>> {
         Some(LightSampleResult {
             wi: -self.dir,
-            pdf: Vector3::new(F::one(), F::one(), F::one()),
+            weight: Vector3::new(F::one(), F::one(), F::one()),
             radiance: self.color,
             distance: F::infinity(),
+            point: None,
         })
     }
 

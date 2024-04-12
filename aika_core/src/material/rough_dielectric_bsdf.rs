@@ -1,7 +1,7 @@
 use cgmath::{BaseFloat, ElementWise, InnerSpace, Vector3};
 use num_traits::Zero;
 use aika_math::distribution::IsotropicGGXDistribution;
-use aika_math::utils::{face_forward, get_z, is_same_hemisphere, is_same_hemisphere_canonical, length_square_vector3, reflect, refract, sqr};
+use aika_math::utils::{face_forward, get_generalized_half, get_z, is_same_hemisphere, is_same_hemisphere_canonical, length_square_vector3, reflect, reflect_bias, refract, smith_g2_lagarde, sqr};
 use crate::f;
 use crate::material::{BSDF, BSDFSampleResult, MaterialTrait, VolumeTrait};
 use crate::path_tracing::{ShadingContext, TracingService};
@@ -12,6 +12,7 @@ pub struct RoughDielectricBSDF<F> {
     /// the ior out of the normal / ior inside the object
     relative_ior: Vector3<F>,
     is_single_ior: bool,
+    roughness: F,
 }
 
 impl<F> RoughDielectricBSDF<F> where F: BaseFloat + 'static {
@@ -25,65 +26,48 @@ impl<F> RoughDielectricBSDF<F> where F: BaseFloat + 'static {
             ndf: IsotropicGGXDistribution::new(roughness),
             relative_ior: ior,
             is_single_ior,
+            roughness
         }
     }
 
     pub fn sample_ray_single_ior(&self, service: &mut TracingService<F>, wo: Vector3<F>, ior_index: usize) -> Option<BSDFSampleResult<F>> {
         let eta = self.relative_ior[ior_index];
         let wm = self.ndf.sample_wm(wo, service.random_0_1(), service.random_0_1());
-        let distribution_of_visible_normal = self.ndf.distribution_of_visible_normal(wo, wm);
-        // println!("{:?}", eta);
-        let cos_theta_i = wm.dot(wo);
-        let fresnel = fresnel_dielectric(cos_theta_i, F::one(), eta).unwrap_or(F::one());
-        let z = Vector3::new(F::zero(), F::zero(), F::one());
+        assert!(wm.z > F::zero());
+        let pdf_wm = self.ndf.distribution_of_visible_normal(wo, wm);
+        let cos_theta_o = wm.dot(wo);
+        let cos_theta_o_abs = cos_theta_o.abs();
+        let fresnel = fresnel_dielectric(cos_theta_o, F::one(), eta).unwrap_or(F::one());
         let backface = wo.z < F::zero();
-
-        let reflection_point_bias = if wo.z >= F::zero() {
-            f!(1e-3)
-        } else {
-            f!(-1e-3)
-        };
-
         let transmission = F::one() - fresnel;
         let random = service.random_0_1();
         // let random = F::one();
         // let random = F::zero();
         if random < fresnel {
+            // reflect
+
             let wi = reflect(wo, wm);
             if !is_same_hemisphere_canonical(wi, wo) {
                 // since we are not considering multi scattering, the ray ends there
                 return None;
             }
-            let pdf_reflection = distribution_of_visible_normal / (F::from(4).unwrap() * wo.dot(wm).abs()) * fresnel;
+
             let ndf = self.ndf.evaluate(wm);
-            let smith_g2 = self.ndf.masking_shadowing(wi, wo);
-            let brdf_plus_cos = fresnel * ndf * smith_g2 / (f!(4) * wo.z.abs());
-            let w = brdf_plus_cos / pdf_reflection;
-            // let w = F::zero();
+            assert!(ndf > F::zero());
+            let lar = smith_g2_lagarde(wi, wo, self.roughness);
+            let weight = lar * f!(4) * cos_theta_o_abs * ndf / pdf_wm;
+
             Some(BSDFSampleResult {
                 direction: wi,
-                weight: Vector3::new(w, w, w),
-                next_point: Vector3::new(F::zero(), F::zero(), reflection_point_bias),
+                weight: Vector3::new(weight, weight, weight),
+                next_point: reflect_bias(wo),
             })
         } else {
             let wi = refract(wo, wm, F::one(), eta);
 
             if wi.is_none() {
                 println!("refract is none");
-                let reflect_dir = reflect(wo, wm);
-                if !is_same_hemisphere_canonical(reflect_dir, wo) {
-                    return None;
-                }
-                let pdf = distribution_of_visible_normal / (F::from(4).unwrap() * wo.dot(wm).abs()) * fresnel;
-                let ndf = self.ndf.evaluate(wm);
-                let smith_g2 = self.ndf.masking_shadowing(reflect_dir, wo);
-                let brdf_plus_cos = fresnel * ndf * smith_g2 / (f!(4) * wo.z.abs());
-                let w = brdf_plus_cos / pdf;
-                return Some(BSDFSampleResult {
-                    direction: reflect(wo, wm),
-                    weight: Vector3::new(w, w, w),
-                    next_point: Vector3::new(F::zero(), F::zero(), reflection_point_bias)
-                });
+                return None;
             }
             let wi = wi.unwrap();
 
@@ -105,26 +89,19 @@ impl<F> RoughDielectricBSDF<F> where F: BaseFloat + 'static {
                 return None;
             }
 
-            let etap = if backface {
-                F::one() / eta
-            } else {
-                eta
-            };
-            let denom = sqr(wi.dot(wm) + wo.dot(wm) / etap);
-            let pdf = distribution_of_visible_normal * (wi.dot(wm).abs() / denom) * transmission;
             let ndf = self.ndf.evaluate(wm);
-            let smith_g2 = self.ndf.masking_shadowing(wi, wo);
-            let partial_solid_angle = if backface {
-                eta * eta
-            } else {
-                F::one() / (eta * eta)
-            };
-            let btdf_plus_cos = transmission * ndf * smith_g2 * (wi.dot(wm) * wo.dot(wm) / (wo.z * denom)).abs() * partial_solid_angle;
-            let w = btdf_plus_cos / pdf;
+            let lar = smith_g2_lagarde(wi, wo, self.roughness);
+            let cos_theta_i_abs = wi.z.abs();
+            let mut weight = f!(4) * lar * cos_theta_i_abs * wm.dot(wo).abs() * ndf / pdf_wm;
+            // if backface {
+            //     weight = weight / (eta * eta);
+            // } else {
+            //     weight = weight * (eta * eta);
+            // }
             Some(BSDFSampleResult {
                 direction: wi,
-                weight: Vector3::new(w, w, w),
-                next_point: Vector3::new(F::zero(), F::zero(), -reflection_point_bias)
+                weight: Vector3::new(weight, weight, weight),
+                next_point: -reflect_bias(wo)
             })
         }
     }
@@ -141,56 +118,38 @@ impl<F> BSDF<F> for RoughDielectricBSDF<F> where F: BaseFloat + 'static {
         let cos_theta_o = wo.z;
         let cos_theta_i = wi.z;
         let reflect = cos_theta_i * cos_theta_o > F::zero();
-        let mut etap = F::one();
-        if !reflect {
-            etap = if cos_theta_i > F::zero() {
-                eta
-            } else {
-                F::one() / eta
-            };
-        }
-        let mut wm = wi + wo * etap;
-        if cos_theta_i == F::zero() || cos_theta_o == F::zero() || length_square_vector3(wm) == F::zero() {
-            return None;
-        }
-        wm = face_forward(wm.normalize(), get_z());
-        assert!(wm.z > F::zero());
-        if reflect {
-            // println!("reflect, {:?}", wm);
-        }
+        let fresnel = fresnel_dielectric(cos_theta_i.abs(), F::one(), eta);
+        let wm = get_generalized_half(wi, wo, eta)?;
 
         if reflect {
-            if !is_same_hemisphere(wi, wo, wm) {
+            if fresnel.is_none() {
                 return None;
             }
+            let fresnel = fresnel.unwrap();
+            assert!(is_same_hemisphere(wi, wo, wm));
+            let wm = if wm.z < F::zero() { -wm } else { wm };
+            let ndf = self.ndf.evaluate(wm);
+            let lar = smith_g2_lagarde(wi, wo, self.roughness);
+            let brdf = fresnel * ndf * lar;
+            Some(Vector3::new(brdf, brdf, brdf))
+            // Some(Vector3::zero())
         } else {
-            if is_same_hemisphere(wi, wo, wm) {
+            if wm.z <= F::zero() {
                 return None;
             }
-        }
-
-        let fresnel = fresnel_dielectric(wi.dot(wm), F::one(), eta).unwrap_or(F::one());
-        if reflect {
+            assert!(wm.z > F::zero());
+            assert!(fresnel.is_some());
+            let fresnel = fresnel.unwrap();
+            let lar = smith_g2_lagarde(wi, wo, self.roughness);
+            let etap = if wi.z > F::zero() { F::one() / eta } else { eta };
+            let wi_dot_wm = wi.dot(wm);
+            let wo_dot_wm = wo.dot(wm);
+            let denom = sqr(wi_dot_wm * etap + wo_dot_wm);
+            let transmit = F::one() - fresnel;
             let ndf = self.ndf.evaluate(wm);
-            let g2 = self.ndf.masking_shadowing(wi, wo);
-            let denom = F::from(4).unwrap() * cos_theta_i * cos_theta_o;
-            let f = ndf * g2 * fresnel / denom.abs();
-            // let f = F::one();
-            Some(Vector3::new(f, f, f))
-        } else {
-            let denom = sqr(wi.dot(wm) + wo.dot(wm) * etap) * cos_theta_i * cos_theta_o;
-            let ndf = self.ndf.evaluate(wm);
-            let g2 = self.ndf.masking_shadowing(wi, wo);
-            let backface = wo.z < F::zero();
-            // let partial_solid_angle = if backface {
-            //     eta * eta
-            // } else {
-            //     F::one() / (eta * eta)
-            // };
-            let f = ndf * (F::one() - fresnel) * g2 * (wi.dot(wm) * wo.dot(wm) / denom).abs();
-            let f = f * (etap * etap);
-            // let f = F::one();
-            Some(Vector3::new(f, f, f))
+            let btdf = transmit * f!(4) * lar * ndf * wi_dot_wm.abs() * wo_dot_wm.abs() / denom;
+            // Some(Vector3::new(btdf, btdf, btdf))
+            Some(Vector3::zero())
         }
     }
 

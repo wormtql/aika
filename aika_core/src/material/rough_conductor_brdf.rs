@@ -2,7 +2,7 @@ use cgmath::{BaseFloat, InnerSpace, Vector3};
 use num_traits::Zero;
 use aika_math::Complex;
 use aika_math::distribution::IsotropicGGXDistribution;
-use aika_math::utils::{is_same_hemisphere, reflect};
+use aika_math::utils::{is_same_hemisphere, reflect, reflect_bias, smith_g2_lagarde};
 use crate::f;
 use crate::material::{BSDF, BSDFSampleResult, MaterialTrait, VolumeTrait};
 use crate::path_tracing::{ShadingContext, TracingService};
@@ -11,34 +11,41 @@ use crate::utils::fresnel_complex;
 pub struct RoughConductorBRDF<F> {
     pub distribution: IsotropicGGXDistribution<F>,
     pub relative_ior: Vector3<Complex<F>>,
+    pub roughness: F,
 }
 
 impl<F> RoughConductorBRDF<F> where F: BaseFloat {
     pub fn new(roughness: F, relative_ior: Vector3<Complex<F>>) -> Self {
         RoughConductorBRDF {
             distribution: IsotropicGGXDistribution::new(roughness),
-            relative_ior
+            relative_ior,
+            roughness
         }
+    }
+
+    pub fn get_fresnel(&self, wi: Vector3<F>, wm: Vector3<F>) -> Vector3<F> {
+        let fresnel1 = fresnel_complex(wm.dot(wi).abs(), F::one(), self.relative_ior[0]);
+        let fresnel2 = fresnel_complex(wm.dot(wi).abs(), F::one(), self.relative_ior[1]);
+        let fresnel3 = fresnel_complex(wm.dot(wi).abs(), F::one(), self.relative_ior[2]);
+        Vector3::new(fresnel1, fresnel2, fresnel3)
     }
 }
 
 impl<F> BSDF<F> for RoughConductorBRDF<F> where F: BaseFloat + 'static {
     fn evaluate(&self, wi: Vector3<F>, wo: Vector3<F>) -> Option<Vector3<F>> {
-        let cos_theta_o = wo.z.abs();
-        let cos_theta_i = wi.z.abs();
-        if cos_theta_i == F::zero() || cos_theta_o == F::zero() {
+        if wi.z <= F::zero() || wo.z <= F::zero() {
+            // println!("this should not happen");
             return None;
         }
+        let cos_theta_o = wo.z.abs();
+        let cos_theta_i = wi.z.abs();
 
-        let half = (wi + wo).normalize();
-        let fresnel1 = fresnel_complex(half.dot(wo).abs(), F::one(), self.relative_ior[0]);
-        let fresnel2 = fresnel_complex(half.dot(wo).abs(), F::one(), self.relative_ior[1]);
-        let fresnel3 = fresnel_complex(half.dot(wo).abs(), F::one(), self.relative_ior[2]);
-        let fresnel = Vector3::new(fresnel1, fresnel2, fresnel3);
+        let wm = (wi + wo).normalize();
+        let fresnel = self.get_fresnel(wi, wm);
 
+        let shadowing_masking = smith_g2_lagarde(wi, wo, self.roughness);
         Some(
-            fresnel * self.distribution.evaluate(half) * self.distribution.masking_shadowing(wi, wo) /
-                (F::from(4).unwrap() * cos_theta_o * cos_theta_i)
+            fresnel * self.distribution.evaluate(wm) * shadowing_masking
         )
     }
 
@@ -46,42 +53,23 @@ impl<F> BSDF<F> for RoughConductorBRDF<F> where F: BaseFloat + 'static {
         let wo = current_dir;
         let z = Vector3::new(F::zero(), F::zero(), F::one());
 
-        let (wm, wi) = {
-            let mut m = Vector3::zero();
-            let mut i = Vector3::zero();
-            let mut finish = false;
-            while !finish {
-                m = self.distribution.sample_wm(wo, service.random_0_1(), service.random_0_1());
-                i = reflect(wo, m);
-                if is_same_hemisphere(i, wo, z) {
-                    finish = true;
-                }
-            }
-            (m, i)
-        };
-
-        if !is_same_hemisphere(wi, wo, z) {
+        let wm = self.distribution.sample_wm(wo, service.random_0_1(), service.random_0_1());
+        let wi = reflect(wo, wm);
+        let pdf_wm = self.distribution.distribution_of_visible_normal(wo, wm);
+        if wi.z <= F::zero() {
             return None;
         }
 
-        let pdf = self.distribution.distribution_of_visible_normal(wo, wm) / (f!(4) * wo.dot(wm).abs());
+        let ndf = self.distribution.evaluate(wm);
+        let fresnel = self.get_fresnel(wi, wm);
+        let lar = smith_g2_lagarde(wi, wo, self.roughness);
+        let weight = lar * f!(4) * wi.z.abs() * ndf / pdf_wm;
+        let weight = fresnel * weight;
 
-        // let fresnel1 = fresnel_complex(wm.dot(wo).abs(), F::one(), self.relative_ior[0]);
-        // let fresnel2 = fresnel_complex(wm.dot(wo).abs(), F::one(), self.relative_ior[1]);
-        // let fresnel3 = fresnel_complex(wm.dot(wo).abs(), F::one(), self.relative_ior[2]);
-        // let fresnel = Vector3::new(fresnel1, fresnel2, fresnel3);
-
-        let next_point_offset = if wo.z > F::zero() {
-            f!(1e-3)
-        } else {
-            f!(-1e-3)
-        };
-
-        let brdf = self.evaluate(wi, wo)?;
         Some(BSDFSampleResult {
             direction: wi,
-            weight: brdf / pdf,
-            next_point: Vector3::new(F::zero(), F::zero(), next_point_offset),
+            weight,
+            next_point: reflect_bias(wo),
         })
     }
 }

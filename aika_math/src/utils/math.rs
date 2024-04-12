@@ -1,5 +1,5 @@
 use std::f64::consts::PI;
-use cgmath::{BaseFloat, InnerSpace, Vector3};
+use cgmath::{BaseFloat, InnerSpace, Matrix, Matrix3, SquareMatrix, Vector3};
 use num_traits::{NumCast, ToPrimitive};
 
 pub fn get_pi<F: BaseFloat>() -> F {
@@ -115,6 +115,10 @@ pub fn get_z<F: BaseFloat>() -> Vector3<F> {
     Vector3::new(F::zero(), F::zero(), F::one())
 }
 
+pub fn get_x<F: BaseFloat>() -> Vector3<F> {
+    Vector3::new(F::one(), F::zero(), F::zero())
+}
+
 pub fn sqr<F: BaseFloat>(x: F) -> F {
     x * x
 }
@@ -176,7 +180,7 @@ where
 
 pub fn safe_sqrt<F: BaseFloat>(x: F) -> F {
     if x < F::zero() {
-        println!("sqrt negative: {:?}", x);
+        // println!("sqrt negative: {:?}", x);
         F::zero()
     } else {
         x.sqrt()
@@ -193,4 +197,85 @@ pub fn lerp_vector3<F: BaseFloat>(x: F, a: Vector3<F>, b: Vector3<F>) -> Vector3
 
 pub fn scalar_sub_vector3<F: BaseFloat>(x: F, y: Vector3<F>) -> Vector3<F> {
     Vector3::new(x - y.x, x - y.y, x - y.z)
+}
+
+pub fn get_generalized_half<F: BaseFloat>(wi: Vector3<F>, wo: Vector3<F>, eta: F) -> Option<Vector3<F>> {
+    let reflect = wi.z * wo.z > F::zero();
+    let mut etap = F::one();
+    if !reflect {
+        etap = if wi.z > F::zero() {
+            eta
+        } else {
+            F::one() / eta
+        };
+    }
+    let wm = wi + wo * etap;
+    if wi.z == F::zero() || wo.z == F::zero() || length_square_vector3(wm) == F::zero() {
+        return None;
+    }
+
+    if reflect {
+        Some(wm)
+    } else {
+        Some(-wm)
+    }
+}
+
+pub fn is_parallel<F: BaseFloat>(a: Vector3<F>, b: Vector3<F>) -> bool {
+    let cross = a.cross(b);
+    let len2 = length_square_vector3(cross);
+    if len2 == F::zero() {
+        true
+    } else {
+        false
+    }
+}
+
+// pub fn matrix3_from_rows<F: BaseFloat>(r1: Vector3<F>, r2: Vector3<F>, r3: Vector3<F>) -> Matrix3<>
+
+/// Given a vector as local z-axis, compose an arbitrary frame
+/// The first returned matrix convert world space to the composed frame
+/// The second matrix convert the other way
+pub fn compose_frame<F: BaseFloat>(z: Vector3<F>) -> (Matrix3<F>, Matrix3<F>) {
+    let z_axis = get_z::<F>();
+    if is_parallel(z_axis, z) {
+        return (Matrix3::identity(), Matrix3::identity());
+    }
+
+    let z = z.normalize();
+    let t1 = z.cross(z_axis).normalize();
+    let t2 = t1.cross(z);
+
+    let local_to_world = Matrix3::from_cols(t1, t2, z);
+    let world_to_local = local_to_world.transpose();
+    (world_to_local, local_to_world)
+}
+
+pub fn get_spherical_direction<F: BaseFloat>(sin_theta: F, cos_theta: F, phi: F) -> Vector3<F> {
+    let (sin_phi, cos_phi) = phi.sin_cos();
+    let x = sin_theta * cos_phi;
+    let y = sin_theta * sin_phi;
+    let z = cos_theta;
+    Vector3::new(x, y, z)
+}
+
+pub fn visualize_unit_vector<F: BaseFloat>(v: Vector3<F>) -> Vector3<F> {
+    let h = F::from(0.5).unwrap();
+    v * h + Vector3::new(h, h, h)
+}
+
+pub fn max_vector3<F: BaseFloat>(a: Vector3<F>, b: Vector3<F>) -> Vector3<F> {
+    Vector3::new(
+        a[0].max(b[0]),
+        a[1].max(b[1]),
+        a[2].max(b[2])
+    )
+}
+
+pub fn min_vector3<F: BaseFloat>(a: Vector3<F>, b: Vector3<F>) -> Vector3<F> {
+    Vector3::new(
+        a[0].min(b[0]),
+        a[1].min(b[1]),
+        a[2].min(b[2])
+    )
 }

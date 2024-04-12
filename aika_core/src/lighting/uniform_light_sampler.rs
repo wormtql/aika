@@ -1,5 +1,6 @@
 use cgmath::BaseFloat;
-use crate::lighting::{Light, LightSampleResult};
+use crate::f;
+use crate::lighting::{Light, LightSampleContext, LightSampleResult};
 use crate::path_tracing::{ShadingContext, TracingService};
 
 pub struct UniformLightSampler<F> {
@@ -25,8 +26,12 @@ impl<F> UniformLightSampler<F> where F: BaseFloat + 'static {
         let len = self.lights.len();
         let random_index = service.random_range(0, len as i32) as usize;
         let light = &self.lights[random_index];
-        let mut sample_result = light.sample_light(service, context.point)?;
-        sample_result.pdf *= F::one() / F::from(len).unwrap();
+        let light_sample_context = LightSampleContext {
+            position: context.point,
+            normal: context.normal
+        };
+        let mut sample_result = light.sample_light(service, &light_sample_context)?;
+        sample_result.weight = sample_result.weight * f!(self.lights.len());
         Some(sample_result)
     }
 }

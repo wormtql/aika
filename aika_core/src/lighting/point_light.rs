@@ -1,7 +1,7 @@
 use cgmath::{BaseFloat, InnerSpace, Vector3};
 use aika_math::utils::length_square_vector3;
 use crate::component::ComponentData;
-use crate::lighting::{Light, LightSampleResult};
+use crate::lighting::{Light, LightSampleContext, LightSampleResult};
 use crate::path_tracing::TracingService;
 
 #[derive(Clone)]
@@ -22,14 +22,15 @@ impl<F> Light<F> for PointLight<F> where F: BaseFloat {
         None
     }
 
-    fn sample_light(&self, service: &TracingService<F>, position: Vector3<F>) -> Option<LightSampleResult<F>> {
-        let wi = (self.position - position).normalize();
-        let r2 = length_square_vector3(self.position - position);
+    fn sample_light(&self, service: &TracingService<F>, context: &LightSampleContext<F>) -> Option<LightSampleResult<F>> {
+        let wi = (self.position - context.position).normalize();
+        let r2 = length_square_vector3(self.position - context.position);
         Some(LightSampleResult {
             wi,
-            pdf: Vector3::new(F::one(), F::one(), F::one()),
+            weight: Vector3::new(F::one(), F::one(), F::one()),
             radiance: self.color / r2,
             distance: r2.sqrt(),
+            point: Some(self.position),
         })
     }
 
