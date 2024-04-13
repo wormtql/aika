@@ -89,7 +89,7 @@ fn get_sphere<F>() -> GameObject<F> where F: BaseFloat + 'static {
 }
 
 fn get_directional_light<F>() -> GameObject<F> where F: BaseFloat + 'static {
-    let light: DirectionalLightComponent<F> = DirectionalLightComponent::new(Vector3::new(f!(0.5), f!(0.6), f!(0.7)) * f!(1.0));
+    let light: DirectionalLightComponent<F> = DirectionalLightComponent::new(Vector3::new(f!(0.5), f!(0.6), f!(0.7)) * f!(3.0));
     let mut go = GameObject::new_empty(String::from("light"));
     go.add_component_owned(light);
 
@@ -104,7 +104,7 @@ fn get_directional_light<F>() -> GameObject<F> where F: BaseFloat + 'static {
 }
 
 fn get_spherical_light<F>() -> GameObject<F> where F: BaseFloat + 'static {
-    let light: SphericalLightComponent<F> = SphericalLightComponent::new(f!(0.7), new_vector3(2, 2, 2.4) * f!(0.5));
+    let light: SphericalLightComponent<F> = SphericalLightComponent::new(f!(0.7), new_vector3(2, 2, 2.4) * f!(2));
     let mut go = GameObject::new_empty(String::from("spherical light"));
     go.add_component_owned(light);
 
@@ -130,7 +130,7 @@ fn get_torus<F: BaseFloat + 'static>() -> GameObject<F> {
     {
         let transform = Transform::new(
             Vector3::new(f!(0.0), f!(0.0), f!(-2)),
-            f!(1),
+            f!(0.5),
             Euler::new(Deg(f!(45)), Deg(f!(0.0)), Deg(f!(0.0))).into()
         );
         game_object.add_component_owned(transform);
@@ -138,8 +138,8 @@ fn get_torus<F: BaseFloat + 'static>() -> GameObject<F> {
 
     // mesh
     {
-        let mesh: DynMesh<F> = WavefrontMeshLoader::torus().unwrap().to_dyn_mesh();
-        // let mesh: DynMesh<F> = WavefrontMeshLoader::sphere().unwrap().to_dyn_mesh();
+        // let mesh: DynMesh<F> = WavefrontMeshLoader::torus().unwrap().to_dyn_mesh();
+        let mesh: DynMesh<F> = WavefrontMeshLoader::sphere().unwrap().to_dyn_mesh();
         let mesh_filter = MeshFilter::new(mesh);
         game_object.add_component_owned(mesh_filter);
     }
@@ -154,8 +154,8 @@ fn get_torus<F: BaseFloat + 'static>() -> GameObject<F> {
         // let material = Material { material_impl: Box::new(DielectricMaterial::new(Vector3::new(f!(2.0), f!(2.0), f!(2.0)))) };
         // let material = Material { material_impl: Box::new(RoughDielectricBSDFMaterial::new_single_ior(f!(0.1), f!(2))) };
         // let material = Material { material_impl: Box::new(RoughDielectricBSDFMaterial::new(f!(0.01), Vector3::new(f!(1.5), f!(1.5), f!(1.5)))) };
-        let material = Material { material_impl: Box::new(RoughConductorBRDFMaterial::new(f!(0.5), MaterialConstants::gold_ior())) };
-        // let material = Material { material_impl: Box::new(MetallicRoughnessBRDFMaterial::new(f!(0.1), f!(1), new_vector3(1, 0.782, 0.344))) };
+        let material = Material { material_impl: Box::new(RoughConductorBRDFMaterial::new(f!(0.1), MaterialConstants::gold_ior())) };
+        // let material = Material { material_impl: Box::new(MetallicRoughnessBRDFMaterial::new(f!(0.5), f!(1), new_vector3(1, 0.782, 0.344))) };
         game_object.add_component_owned(material);
     }
 
@@ -183,7 +183,7 @@ fn main_with_type<F>() -> Result<()> where F: BaseFloat + 'static {
     );
 
     let size = 300;
-    let image = SimplePathTracing::trace(&scene, size, size, &camera, &camera_transform);
+    let image = SimplePathTracing::trace(&scene, 5, size, size, &camera, &camera_transform);
     // let image = ShadeNormal::shade_normal(&scene, size, size, &camera, &camera_transform);
     image.save("trace.png")?;
 

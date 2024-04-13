@@ -3,6 +3,7 @@ use cgmath::{BaseFloat, InnerSpace, Vector3};
 use aika_math::Ray;
 use crate::material::{BSDF, BSDFSampleResult, MaterialTrait, VolumeTrait};
 use anyhow::Result;
+use aika_math::utils::{get_2pi, sample_uniform_hemisphere};
 use crate::f;
 use crate::path_tracing::{ShadingContext, TracingService};
 
@@ -27,25 +28,18 @@ impl<F> BSDF<F> for DiffuseBRDF<F> where F: BaseFloat + 'static {
 
     fn sample_ray(&self, service: &mut TracingService<F>, current_dir: Vector3<F>) -> Option<BSDFSampleResult<F>> {
         if current_dir.z < F::zero() {
+            assert!(false);
             println!("current dir: {:?}", current_dir);
             return None;
         }
         // assert!(current_dir.z >= F::zero());
-        let a = service.random_0_1();
-        let b = service.random_0_1();
 
-        let pi2 = F::from(PI * 2.0).unwrap();
-        let phi = pi2 * a;
-        let cos_theta = F::one() - b;
-        let sin_theta = (F::one() - cos_theta).sqrt();
-        let (sin_phi, cos_phi) = phi.sin_cos();
-
-        let dir = Vector3::new(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta).normalize();
-        // assert!(dir.z >= F::zero());
-        if dir.z < F::zero() {
+        let dir = sample_uniform_hemisphere(service.random_0_1(), service.random_0_1());
+        assert!(dir.z > F::zero());
+        if dir.z <= F::zero() {
             println!("sampled diffuse brdf dir is under normal {:?}", dir);
         }
-        let pdf = F::one() / pi2;
+        let pdf = F::one() / get_2pi();
         let weight = self.albedo * F::from(2).unwrap() * dir.z;
 
         let result = BSDFSampleResult {

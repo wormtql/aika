@@ -123,6 +123,7 @@ impl<F> BSDF<F> for RoughDielectricBSDF<F> where F: BaseFloat + 'static {
 
         if reflect {
             if fresnel.is_none() {
+                println!("fresnel is none but is reflect");
                 return None;
             }
             let fresnel = fresnel.unwrap();
@@ -135,21 +136,28 @@ impl<F> BSDF<F> for RoughDielectricBSDF<F> where F: BaseFloat + 'static {
             // Some(Vector3::zero())
         } else {
             if wm.z <= F::zero() {
+                // println!("wm.z < 0");
                 return None;
             }
             assert!(wm.z > F::zero());
             assert!(fresnel.is_some());
             let fresnel = fresnel.unwrap();
             let lar = smith_g2_lagarde(wi, wo, self.roughness);
-            let etap = if wi.z > F::zero() { F::one() / eta } else { eta };
+            // let etap = if wi.z > F::zero() { F::one() / eta } else { eta };
+            let etap = if wi.z > F::zero() { eta } else { F::one() / eta };
             let wi_dot_wm = wi.dot(wm);
             let wo_dot_wm = wo.dot(wm);
-            let denom = sqr(wi_dot_wm * etap + wo_dot_wm);
+            let vertical_component_sqr = sqr(wi_dot_wm + etap * wo_dot_wm);
             let transmit = F::one() - fresnel;
             let ndf = self.ndf.evaluate(wm);
-            let btdf = transmit * f!(4) * lar * ndf * wi_dot_wm.abs() * wo_dot_wm.abs() / denom;
-            // Some(Vector3::new(btdf, btdf, btdf))
-            Some(Vector3::zero())
+            let mut btdf = transmit * f!(4) * lar * ndf * wi_dot_wm.abs() * wo_dot_wm.abs() * etap * etap / vertical_component_sqr;
+            // if wi.z > F::zero() {
+            //     btdf = btdf * (eta * eta);
+            // } else {
+            //     btdf = btdf / (eta * eta);
+            // }
+            Some(Vector3::new(btdf, btdf, btdf))
+            // Some(Vector3::zero())
         }
     }
 

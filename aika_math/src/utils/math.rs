@@ -213,6 +213,7 @@ pub fn get_generalized_half<F: BaseFloat>(wi: Vector3<F>, wo: Vector3<F>, eta: F
     if wi.z == F::zero() || wo.z == F::zero() || length_square_vector3(wm) == F::zero() {
         return None;
     }
+    let wm = wm.normalize();
 
     if reflect {
         Some(wm)
@@ -278,4 +279,8 @@ pub fn min_vector3<F: BaseFloat>(a: Vector3<F>, b: Vector3<F>) -> Vector3<F> {
         a[1].min(b[1]),
         a[2].min(b[2])
     )
+}
+
+pub fn get_vector3_one<F: BaseFloat>() -> Vector3<F> {
+    Vector3::new(F::one(), F::one(), F::one())
 }

@@ -12,7 +12,7 @@ use crate::material::{BSDF, Material};
 use crate::path_tracing::{ShadingContext, TracingService};
 use anyhow::Result;
 use indicatif::ProgressBar;
-use aika_math::utils::{is_same_hemisphere, visualize_unit_vector};
+use aika_math::utils::{get_vector3_one, is_same_hemisphere, visualize_unit_vector};
 use crate::f;
 use crate::path_tracing::shading_context::RayObjectStatus;
 
@@ -121,6 +121,9 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
                                 if result.wi.dot(shading_context.normal) > F::zero() {
                                     let light_dir_ts = shading_context.convert_vector_to_tangent_space(result.wi);
 
+                                    // if pixel.0 == 149 && pixel.1 == 155 {
+                                    //     println!("123123");
+                                    // }
                                     let f = bsdf.evaluate(light_dir_ts, wo);
                                     if let Some(f) = f {
                                         let shadow_ray = Ray::new(hit_point + interpolated_normal * f!(1e-3), result.wi);
@@ -128,18 +131,26 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
                                         let ray_transmission = tracing_service.get_ray_transmission(&shadow_ray, F::zero(), result.distance);
                                         // let ray_transmission = F::one();
                                         // return Ok(visualize_unit_vector(result.wi));
-                                        if ray_transmission == F::zero() {
-                                            return Ok(Vector3::zero());
-                                        } else {
-                                            return Ok(Vector3::new(F::one(), F::one(), F::one()));
-                                        }
+                                        // if ray_transmission == F::zero() {
+                                        //     return Ok(Vector3::zero());
+                                        // } else {
+                                        //     return Ok(Vector3::new(F::one(), F::one(), F::one()));
+                                        // }
                                         let contribution = f.mul_element_wise(result.radiance).mul_element_wise(result.weight) * light_dir_ts.z.abs();
                                         radiance += throughput.mul_element_wise(contribution) * ray_transmission;
+                                        if ray_iter == 1 {
+                                            return Ok(contribution * ray_transmission);
+                                        }
+
                                     } else {
-                                        return Ok(Vector3::new(F::one(), F::zero(), F::one()));
+                                        // return Ok(Vector3::zero());
+                                        // return Ok(Vector3::new(F::one(), F::zero(), F::one()));
                                     }
+                                } else {
+                                    // return Ok(Vector3::new(F::one(), F::zero(), F::zero()));
                                 }
                             }
+                            // return Ok(Vector3::new(F::one(), F::zero(), F::zero()));
                         }
 
                         let sample_result = bsdf.sample_ray(tracing_service, wo);
@@ -225,7 +236,7 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
         Ok(radiance)
     }
 
-    pub fn trace(scene: &Scene<F>, width: usize, height: usize, camera: &PerspectiveCamera<F>, camera_transform: &Transform<F>) -> RgbImage {
+    pub fn trace(scene: &Scene<F>, depth: usize, width: usize, height: usize, camera: &PerspectiveCamera<F>, camera_transform: &Transform<F>) -> RgbImage {
         let mut result = RgbImage::new(width as u32, height as u32);
         let mut tracing_service = TracingService::new(scene);
 
@@ -233,9 +244,9 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
 
         for (ray, (i, j)) in camera.iter_ray(&camera_transform, width, height) {
             let mut sum = Vector3::zero();
-            let spp = 3;
+            let spp = 1024;
             for k in 0..spp {
-                let color = SimplePathTracing::shade_one_ray(&mut tracing_service, &ray, 2, (i, j)).unwrap();
+                let color = SimplePathTracing::shade_one_ray(&mut tracing_service, &ray, depth, (i, j)).unwrap();
                 // println!("{:?}", color.div_element_wise(pdf));
                 sum += color;
             }
