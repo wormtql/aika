@@ -155,25 +155,36 @@ fn get_torus<F: BaseFloat + 'static>() -> GameObject<F> {
 
     // material
     {
+        let checkerboard: Rc<dyn Texture2DTrait<F>> = Rc::new(
+            CheckerboardTexture::new(
+                f!(0.07),
+                Vector3::new(f!(0.1), f!(0.1), f!(0.1)),
+                Vector3::new(F::one(), F::one(), F::one())
+            ));
         // let material: Material<F> = Material { material_impl: Box::new(DiffuseBRDFMaterial::new(Vector3::new(f!(1.0), f!(0.8), f!(0.2))) ) };
-        // let material: Material<F> = Material { material_impl: Box::new(AbsorptionVolumeMaterial::new(Vector3::new(f!(0.1), f!(0.5), f!(0.2)))) };
+        let material: Material<F> = Material { material_impl: Box::new(AbsorptionVolumeMaterial::new(Vector3::new(f!(0.1), f!(0.5), f!(0.2)))) };
+        // let material: Material<F> = Material { material_impl: Box::new(AbsorptionVolumeMaterial::new(Vector3::new(f!(0), f!(0), f!(0)))) };
         // let material: Material<F> = Material {
         //     material_impl: Box::new(ConductorBRDF::gold_in_air())
         // };
         // let material = Material { material_impl: Box::new(DielectricMaterial::new(Vector3::new(f!(2.0), f!(2.0), f!(2.0)))) };
-        // let material = Material { material_impl: Box::new(RoughDielectricBSDFMaterial::new_single_ior(f!(0.1), f!(2))) };
+        // let material = Material {
+        //     material_impl: Box::new(RoughDielectricBSDFMaterial::new(
+        //         Rc::new(Texture2DNode::new(checkerboard)),
+        //         f!(2)
+        //     ))
+        // };
         // let material = Material { material_impl: Box::new(RoughDielectricBSDFMaterial::new(f!(0.01), Vector3::new(f!(1.5), f!(1.5), f!(1.5)))) };
         // let material = Material { material_impl: Box::new(RoughConductorBRDFMaterial::new(f!(0.1), MaterialConstants::gold_ior())) };
-        let checkerboard: Rc<dyn Texture2DTrait<F>> = Rc::new(CheckerboardTexture::new(f!(0.07)));
-        let material = Material {
-            material_impl: Box::new(MetallicRoughnessBRDFMaterial::new(
-                Rc::new(f!(0.3)),
-                // Rc::new(Texture2DNode::new(checkerboard)),
-                Rc::new(f!(1)),
-                // Rc::new(new_vector3(1, 0.782, 0.344))
-                Rc::new(Texture2DNode::new(checkerboard))
-            )),
-        };
+        // let material = Material {
+        //     material_impl: Box::new(MetallicRoughnessBRDFMaterial::new(
+        //         Rc::new(f!(0.3)),
+        //         // Rc::new(Texture2DNode::new(checkerboard)),
+        //         Rc::new(f!(1)),
+        //         // Rc::new(new_vector3(1, 0.782, 0.344))
+        //         Rc::new(Texture2DNode::new(checkerboard))
+        //     )),
+        // };
         game_object.add_component_owned(material);
     }
 
@@ -208,7 +219,7 @@ fn main_with_type<F>() -> Result<()> where F: BaseFloat + 'static {
     let sampler: UniformSampler<F> = UniformSampler::new();
     let h = F::from(0.5).unwrap();
     let mut tracing_service = TracingService::new(&scene);
-    let spp = 64;
+    let spp = 1;
     let pb = ProgressBar::new((size * size) as u64);
     for x in 0..size {
         for y in 0..size {
@@ -224,7 +235,7 @@ fn main_with_type<F>() -> Result<()> where F: BaseFloat + 'static {
                 let pixel_center = Vector2::new(pixel_center_x, pixel_center_y);
                 let ray = camera.get_ray_world_space(pixel_center, &camera_transform);
 
-                let pixel = SimplePathTracing::shade_one_ray(&mut tracing_service, &ray, 5, (x, y))?;
+                let pixel = SimplePathTracing::shade_one_ray(&mut tracing_service, &ray, 2, (x, y))?;
 
                 total_value += pixel;
             }

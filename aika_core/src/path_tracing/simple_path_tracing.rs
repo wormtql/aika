@@ -127,9 +127,10 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
                                     // }
                                     let f = bsdf.evaluate(light_dir_ts, wo);
                                     if let Some(f) = f {
-                                        let shadow_ray = Ray::new(hit_point + interpolated_normal * f!(1e-3), result.wi);
+                                        let offset = if back_face { f!(-1e-3) } else { f!(1e-3) };
+                                        let shadow_ray = Ray::new(hit_point + interpolated_normal * offset, result.wi);
                                         // let shadow_ray = Ray::new(hit_point, result.wi);
-                                        let ray_transmission = tracing_service.get_ray_transmission(&shadow_ray, F::zero(), result.distance);
+                                        let ray_transmission = tracing_service.get_ray_transmission(&shadow_ray, result.distance);
                                         // let ray_transmission = F::one();
                                         // return Ok(visualize_unit_vector(result.wi));
                                         // if ray_transmission == F::zero() {
@@ -138,10 +139,15 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
                                         //     return Ok(Vector3::new(F::one(), F::one(), F::one()));
                                         // }
                                         let contribution = f.mul_element_wise(result.radiance).mul_element_wise(result.weight) * light_dir_ts.z.abs();
-                                        radiance += throughput.mul_element_wise(contribution) * ray_transmission;
-                                        if ray_iter == 1 {
-                                            return Ok(contribution * ray_transmission);
-                                        }
+                                        radiance += throughput.mul_element_wise(contribution).mul_element_wise(ray_transmission);
+                                        // if ray_transmission.x == F::zero() {
+                                        //     println!("{:?}", pixel);
+                                        // }
+                                        // return Ok(ray_transmission);
+
+                                        // if ray_iter == 1 {
+                                        //     return Ok(contribution * ray_transmission);
+                                        // }
 
                                     } else {
                                         // return Ok(Vector3::zero());
@@ -207,8 +213,11 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
                             let sample_result = volume.sample_ray(
                                 &tracing_service, &shading_context, sampled_ray_dir_ws
                             )?;
-                            // println!("{:?}", sample_result.weight);
+                            // println!("before: {:?}", throughput);
                             throughput.mul_assign_element_wise(sample_result.weight);
+                            // throughput = Vector3::zero();
+                            // println!("after: {:?}", throughput);
+                            // return Ok(throughput);
                             sampled_ray_dir_ws = sample_result.next_direction;
                             sampled_ray_point = sample_result.point;
                         }

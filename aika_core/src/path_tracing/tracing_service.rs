@@ -1,9 +1,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use cgmath::{BaseFloat, Vector3};
+use cgmath::{BaseFloat, ElementWise, Vector3};
+use num_traits::Zero;
 use aika_math::{HitRecord, Hittable, Ray};
+use crate::f;
 use crate::lighting::{DirectionalLight, DirectionalLightComponent, LightSampleResult, PointLight, PointLightComponent, SphericalLight, SphericalLightComponent, UniformLightSampler};
 use crate::mashed_scene::{MashedScene, MashedTriangle};
+use crate::material::Material;
 use crate::path_tracing::ShadingContext;
 use crate::scene::{GameObject, Scene};
 use crate::utils::RandomGenerator;
@@ -20,13 +23,64 @@ impl<F> TracingService<F> where F: BaseFloat + 'static {
         result
     }
 
-    pub fn get_ray_transmission(&self, ray: &Ray<F>, min: F, max: F) -> F {
-        let hit_result = self.hit_ray(ray, min, max);
-        if let Some(r) = hit_result {
-            F::zero()
-        } else {
-            F::one()
+    pub fn get_ray_transmission(&self, ray: &Ray<F>, max: F) -> Vector3<F> {
+        let mut result = Vector3::new(F::one(), F::one(), F::one());
+
+        // let mut t = F::zero();
+        let mut ray = ray.clone();
+        let mut remain = max;
+        while remain > F::zero() {
+            if let Some(r) = self.hit_ray(&ray, F::zero(), max) {
+                // let mashed_triangle = r.hit_object.unwrap().clone();
+                let go = r.hit_object.as_ref().unwrap().go.clone();
+                remain -= r.t;
+
+                let material_component = go.get_component::<Material<F>>();
+                if material_component.is_ok() {
+                    let material = material_component.as_ref().unwrap().downcast::<Material<F>>();
+                    if material.material_impl.has_bsdf() {
+                        return Vector3::zero();
+                    } else {
+                        if material.material_impl.has_volume() {
+                            let volume = material.material_impl.get_volume().unwrap();
+                            let hit_point = r.get_hit_point(&ray);
+                            // we don't need interpolated normal here
+                            let normal = r.normal.unwrap();
+                            let offset = if r.back_facing.unwrap() { f!(1e-3) } else { f!(-1e-3) };
+                            let ray2 = Ray::new(hit_point + normal * offset, ray.direction);
+
+                            let hit_result2 = self.hit_ray(&ray2, F::zero(), remain);
+                            if hit_result2.is_none() {
+
+                                let transmittance = volume.transmittance(hit_point, hit_point + ray.direction * remain);
+                                result = result.mul_element_wise(transmittance);
+                                return result;
+                            } else {
+                                let hr2 = hit_result2.unwrap();
+                                let hit_point2 = hr2.get_hit_point(&ray2);
+                                let normal2 = hr2.normal.unwrap();
+                                remain -= hr2.t;
+
+                                let offset2 = if hr2.back_facing.unwrap() { f!(1e-3) } else { f!(-1e-3) };
+
+                                let transmittance = volume.transmittance(hit_point, hit_point2);
+                                result = result.mul_element_wise(transmittance);
+
+                                ray.origin = hit_point2 + normal2 * offset2;
+                                ray.direction = ray2.direction;
+                            }
+                        }
+                    }
+                } else {
+                    // return Vector3::new(F::one(), F::zero(), F::one());
+                    return Vector3::zero()
+                }
+            } else {
+                break;
+            }
         }
+
+        result
     }
 
     pub fn hit_ray_0_inf(&self, ray: &Ray<F>) -> Option<HitRecord<F, Rc<MashedTriangle<F>>>> {

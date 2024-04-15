@@ -1,9 +1,11 @@
+use std::rc::Rc;
 use cgmath::{BaseFloat, ElementWise, InnerSpace, Vector3};
 use num_traits::Zero;
 use aika_math::distribution::IsotropicGGXDistribution;
 use aika_math::utils::{face_forward, get_generalized_half, get_z, is_same_hemisphere, is_same_hemisphere_canonical, length_square_vector3, reflect, reflect_bias, refract, smith_g2_lagarde, sqr};
 use crate::f;
 use crate::material::{BSDF, BSDFSampleResult, MaterialTrait, VolumeTrait};
+use crate::material_graph::{MaterialGraphContext, OutputValue};
 use crate::path_tracing::{ShadingContext, TracingService};
 use crate::utils::fresnel_dielectric;
 
@@ -72,18 +74,18 @@ impl<F> RoughDielectricBSDF<F> where F: BaseFloat + 'static {
             let wi = wi.unwrap();
 
             // check correctness, which can be excluded in release build
-            {
-                let sin_theta_o = (F::one() - wo.dot(wm).powi(2)).sqrt();
-                let sin_theta_i = (F::one() - wi.dot(wm).powi(2)).sqrt();
-                let e2 = if backface {
-                    F::one() / eta
-                    // eta
-                } else { eta };
-                if (sin_theta_o - sin_theta_i * e2).abs() >= F::from(1e-3).unwrap() {
-                    println!("wi: {:?}, wo: {:?}, relative ior: {:?}", wi, wo, e2);
-                    println!("{:?}, {:?}, backface: {}", sin_theta_o, sin_theta_i * e2, backface);
-                }
-            }
+            // {
+            //     let sin_theta_o = (F::one() - wo.dot(wm).powi(2)).sqrt();
+            //     let sin_theta_i = (F::one() - wi.dot(wm).powi(2)).sqrt();
+            //     let e2 = if backface {
+            //         F::one() / eta
+            //         // eta
+            //     } else { eta };
+            //     if (sin_theta_o - sin_theta_i * e2).abs() >= F::from(1e-3).unwrap() {
+            //         println!("wi: {:?}, wo: {:?}, relative ior: {:?}", wi, wo, e2);
+            //         println!("{:?}, {:?}, backface: {}", sin_theta_o, sin_theta_i * e2, backface);
+            //     }
+            // }
 
             if is_same_hemisphere_canonical(wi, wo) || wi.z == F::zero() {
                 return None;
@@ -185,21 +187,14 @@ impl<F> BSDF<F> for RoughDielectricBSDF<F> where F: BaseFloat + 'static {
 }
 
 pub struct RoughDielectricBSDFMaterial<F> {
-    pub roughness: F,
-    pub ior: Vector3<F>,
+    pub roughness: Rc<dyn OutputValue<F, F>>,
+    pub ior: F,
 }
 
 impl<F> RoughDielectricBSDFMaterial<F> where F: BaseFloat {
-    pub fn new(roughness: F, ior: Vector3<F>) -> Self {
+    pub fn new(roughness: Rc<dyn OutputValue<F, F>>, ior: F) -> Self {
         RoughDielectricBSDFMaterial {
             roughness, ior
-        }
-    }
-
-    pub fn new_single_ior(roughness: F, ior: F) -> Self {
-        RoughDielectricBSDFMaterial {
-            roughness,
-            ior: Vector3::new(ior, ior, ior)
         }
     }
 }
@@ -215,14 +210,20 @@ impl<F> MaterialTrait<F> for RoughDielectricBSDFMaterial<F> where F: BaseFloat +
 
     fn get_bsdf(&self, context: &ShadingContext<F>) -> Option<Box<dyn BSDF<F>>> {
         let current_ior = context.get_current_ior();
+        let material_context = MaterialGraphContext {
+            uv: context.uv
+        };
+        let self_ior_vec3 = Vector3::new(self.ior, self.ior, self.ior);
+
         let relative_ior = if !context.back_face {
-            self.ior.div_element_wise(current_ior)
+            self_ior_vec3.div_element_wise(current_ior)
         } else {
             let next_ior = context.get_next_top_ior();
-            // next_ior.div_element_wise(self.ior)
-            self.ior.div_element_wise(next_ior)
+            self_ior_vec3.div_element_wise(next_ior)
         };
-        Some(Box::new(RoughDielectricBSDF::new(self.roughness, relative_ior)))
+
+        let roughness = self.roughness.get_value(&material_context);
+        Some(Box::new(RoughDielectricBSDF::new(roughness, relative_ior)))
     }
 
     fn get_volume(&self) -> Option<Box<dyn VolumeTrait<F>>> {
@@ -230,6 +231,6 @@ impl<F> MaterialTrait<F> for RoughDielectricBSDFMaterial<F> where F: BaseFloat +
     }
 
     fn get_ior(&self) -> Option<Vector3<F>> {
-        Some(self.ior)
+        Some(Vector3::new(self.ior, self.ior, self.ior))
     }
 }

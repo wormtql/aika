@@ -4,6 +4,7 @@ use aika_math::Ray;
 use crate::material::{BSDF, MaterialTrait, VolumeSampleResult, VolumeTrait};
 use crate::path_tracing::{ShadingContext, TracingService};
 use anyhow::{anyhow, Result};
+use crate::f;
 
 /// A homogeneous absorption volume, which follows beer-lambert law
 #[derive(Clone)]
@@ -54,6 +55,7 @@ impl<F> VolumeTrait<F> for AbsorptionVolume<F> where F: BaseFloat + 'static {
         // println!("{:?}", hit_result.is_some());
 
         if hit_result.is_none() {
+            println!("volume hit is none");
             return Ok(VolumeSampleResult {
                 next_direction: current_dir,
                 point: shading_context.point,
@@ -66,10 +68,18 @@ impl<F> VolumeTrait<F> for AbsorptionVolume<F> where F: BaseFloat + 'static {
         let hit_point = hit_record.get_hit_point(&ray);
 
         let transmittance = self.transmittance(shading_context.point, hit_point);
+        // println!("{:?}", transmittance);
+
+        let next_point_offset = if hit_record.back_facing.unwrap() {
+            f!(1e-3)
+        } else {
+            f!(-1e-3)
+        };
+        let normal = hit_record.normal.unwrap();
 
         let result = VolumeSampleResult {
             next_direction: current_dir,
-            point: hit_point,
+            point: hit_point + normal * next_point_offset,
             weight: transmittance,
         };
 

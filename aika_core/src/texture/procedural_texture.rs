@@ -4,12 +4,16 @@ use crate::texture::Texture2DTrait;
 
 pub struct CheckerboardTexture<F> {
     pub size: F,
+    pub color1: Vector3<F>,
+    pub color2: Vector3<F>,
 }
 
 impl<F> CheckerboardTexture<F> where F: BaseFloat {
-    pub fn new(size: F) -> Self {
+    pub fn new(size: F, color1: Vector3<F>, color2: Vector3<F>) -> Self {
         CheckerboardTexture {
-            size
+            size,
+            color1,
+            color2,
         }
     }
 }
@@ -22,9 +26,9 @@ impl<F> Texture2DTrait<F> for CheckerboardTexture<F> where F: BaseFloat {
 
         let x = (u + v).to_i32().unwrap();
         if x % 2 == 0 {
-            Vector3::zero()
+            self.color1
         } else {
-            Vector3::new(F::one(), F::one(), F::one())
+            self.color2
         }
     }
 }
