@@ -9,6 +9,14 @@ pub struct Texture2DNode<F> {
     pub texture: Rc<dyn Texture2DTrait<F>>,
 }
 
+impl<F> Texture2DNode<F> where F: BaseFloat {
+    pub fn new(texture: Rc<dyn Texture2DTrait<F>>) -> Self {
+        Self {
+            texture
+        }
+    }
+}
+
 impl<F> OutputValue<F, Vector3<F>> for Texture2DNode<F> where F: BaseFloat {
     fn get_value(&self, context: &MaterialGraphContext<F>) -> Vector3<F> {
         self.texture.sample(context.uv)

@@ -31,6 +31,7 @@ impl<T, H> HitRecord<T, H> where T: BaseFloat {
         target.t = self.t;
         target.normal = self.normal.clone();
         target.back_facing = self.back_facing.clone();
+        target.uv = self.uv.clone();
     }
 }
 

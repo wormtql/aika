@@ -83,6 +83,7 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
                     shading_context.bitangent = bitangent;
                     shading_context.ray_dir = current_ray.direction;
                     shading_context.point = hit_point;
+                    shading_context.uv = r.uv.unwrap();
                     shading_context.recalculate_tangent_space();
 
                     let back_face = current_ray.direction.dot(interpolated_normal) > F::zero();

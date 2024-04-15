@@ -12,7 +12,7 @@ pub struct Triangle<T> {
 }
 
 pub struct TriangleIntersectResult<F> {
-    pub barycentric_coordinates: [F; 3]
+    pub barycentric_coordinates: Vector3<F>,
 }
 
 impl<F> Triangle<F> where F: BaseFloat {
@@ -48,8 +48,8 @@ impl<F> Bounded<AABB<F>> for Triangle<F> where F: BaseFloat {
 }
 
 // See https://pbr-book.org/4ed/Shapes/Triangle_Meshes
-impl<F> Hittable<F, ()> for Triangle<F> where F: BaseFloat + 'static {
-    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, ()>> {
+impl<F> Hittable<F, TriangleIntersectResult<F>> for Triangle<F> where F: BaseFloat + 'static {
+    fn hit(&self, ray: &Ray<F>, min: F, max: F) -> Option<HitRecord<F, TriangleIntersectResult<F>>> {
         let n = self.get_normal();
 
         let e2 = self.c - self.a;
@@ -147,41 +147,11 @@ impl<F> Hittable<F, ()> for Triangle<F> where F: BaseFloat + 'static {
             t,
             normal: Some(n),
             back_facing: Some(n.dot(ray.direction) > F::zero()),
-            hit_object: None,
+            hit_object: Some(TriangleIntersectResult {
+                barycentric_coordinates: Vector3::new(b0, b1, b2),
+            }),
             uv: None,
         })
-
-        // let dn = ray.direction.dot(n);
-        // if dn == F::zero() {
-        //     // ray is orthogonal to triangle normal
-        //     return None;
-        // }
-        //
-        // let t = (self.a - ray.origin).dot(n) / dn;
-        // if t < min || t > max {
-        //     return None;
-        // }
-        // let p = ray.origin + ray.direction * t;
-        // // let uvw = self.get_bary_centric_coordinate(p);
-        //
-        // let s = F::from(10).unwrap();
-        // let abxbp = ((self.b - self.a) * s).cross(p - self.b);
-        // let bcxcp = ((self.c - self.b) * s).cross(p - self.c);
-        // let caxap = ((self.a - self.c) * s).cross(p - self.a);
-        //
-        // // check point is inside the triangle
-        // let flag1 = abxbp.dot(bcxcp) >= F::zero();
-        // let flag2 = abxbp.dot(caxap) >= F::zero();
-        // if flag1 && flag2 {
-        //     Some(HitRecord {
-        //         t,
-        //         normal: Some(n),
-        //         back_facing: Some(n.dot(ray.direction) > F::zero()),
-        //         hit_object: None,
-        //     })
-        // } else {
-        //     None
-        // }
     }
 }
 

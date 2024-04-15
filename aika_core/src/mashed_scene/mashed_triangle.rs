@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use cgmath::{BaseFloat, Rotation, Vector3};
+use cgmath::{BaseFloat, Rotation, Vector2, Vector3};
 use aika_math::{AABB, Bounded, HaveCenter, HitRecord, Hittable, Ray, Triangle};
 use crate::component::{MeshFilter, Transform};
 use crate::mesh::VertexBuffer;
@@ -14,9 +14,6 @@ pub struct MashedTriangle<F> {
 impl<F> MashedTriangle<F> where F: BaseFloat + 'static {
     /// the returned normal is not normalized
     pub fn interpolate_normal(&self, uvw: (F, F, F)) -> Option<Vector3<F>> {
-        let mesh_component = self.go.get_component::<MeshFilter<F>>().ok()?;
-        let mesh = mesh_component.downcast::<MeshFilter<F>>();
-        let x = &mesh.mesh.vertices;
         let n1 = self.get_vertex_normal(0);
         let n2 = self.get_vertex_normal(1);
         let n3 = self.get_vertex_normal(2);
@@ -24,9 +21,25 @@ impl<F> MashedTriangle<F> where F: BaseFloat + 'static {
         Some(n1 * uvw.0 + n2 * uvw.1 + n3 * uvw.2)
     }
 
+    pub fn interpolate_uv0(&self, bc: Vector3<F>) -> Option<Vector2<F>> {
+        let uv1 = self.get_vertex_uv(0);
+        let uv2 = self.get_vertex_uv(1);
+        let uv3 = self.get_vertex_uv(2);
+
+        Some(uv1 * bc[0] + uv2 * bc[1] + uv3 * bc[2])
+    }
+
     pub fn get_transform(&self) -> Transform<F> {
         let transform = self.go.get_transform().unwrap();
         transform
+    }
+
+    pub fn get_vertex_uv(&self, index: usize) -> Vector2<F> {
+        let mesh_component = self.go.get_component::<MeshFilter<F>>().unwrap();
+        let mesh = mesh_component.downcast::<MeshFilter<F>>();
+        let vertex_buffer = &mesh.mesh.vertices;
+        let uv = vertex_buffer.get_uv0(self.vertex_index[index]).unwrap();
+        uv
     }
 
     pub fn get_vertex_normal(&self, index: usize) -> Vector3<F> {
@@ -55,6 +68,10 @@ impl<F> Hittable<F, GameObject<F>> for MashedTriangle<F> where F: BaseFloat + 's
             let mut ret = HitRecord::new();
             r.copy_except_hit_object(&mut ret);
             ret.hit_object = Some(self.go.clone());
+
+            let uvw = r.hit_object.unwrap().barycentric_coordinates;
+            let tex_coords = self.interpolate_uv0(uvw);
+            ret.uv = tex_coords;
 
             Some(ret)
         } else {

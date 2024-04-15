@@ -10,7 +10,9 @@ use indicatif::ProgressBar;
 use aika_core::component::{MeshFilter, Transform};
 use aika_core::lighting::{DirectionalLightComponent, SphericalLight, SphericalLightComponent};
 use aika_core::material::{AbsorptionVolumeMaterial, ConductorBRDF, DielectricMaterial, DiffuseBRDF, DiffuseBRDFMaterial, Material, MaterialConstants, MaterialType, MetallicRoughnessBRDFMaterial, RoughConductorBRDF, RoughConductorBRDFMaterial, RoughDielectricBSDFMaterial, UniformEmitMaterial};
+use aika_core::material_graph::Texture2DNode;
 use aika_core::renderer::TexcoordsRenderer;
+use aika_core::texture::{CheckerboardTexture, Texture2DTrait};
 use aika_core::utils::vector3_to_rgb_clamped;
 use aika_math::UniformSampler;
 use aika_math::utils::new_vector3;
@@ -145,8 +147,7 @@ fn get_torus<F: BaseFloat + 'static>() -> GameObject<F> {
     {
         // let mesh: DynMesh<F> = WavefrontMeshLoader::torus().unwrap().to_dyn_mesh();
         // let mesh: DynMesh<F> = WavefrontMeshLoader::lucy().unwrap().to_dyn_mesh();
-        let mesh: DynMesh<F> = WavefrontMeshLoader::torus().unwrap().to_dyn_mesh();
-        // let mesh: DynMesh<F> = WavefrontMeshLoader::sphere().unwrap().to_dyn_mesh();
+        let mesh: DynMesh<F> = WavefrontMeshLoader::sphere().unwrap().to_dyn_mesh();
         // let mesh: DynMesh<F> = WavefrontMeshLoader::suzanne().unwrap().to_dyn_mesh();
         let mesh_filter = MeshFilter::new(mesh);
         game_object.add_component_owned(mesh_filter);
@@ -163,10 +164,15 @@ fn get_torus<F: BaseFloat + 'static>() -> GameObject<F> {
         // let material = Material { material_impl: Box::new(RoughDielectricBSDFMaterial::new_single_ior(f!(0.1), f!(2))) };
         // let material = Material { material_impl: Box::new(RoughDielectricBSDFMaterial::new(f!(0.01), Vector3::new(f!(1.5), f!(1.5), f!(1.5)))) };
         // let material = Material { material_impl: Box::new(RoughConductorBRDFMaterial::new(f!(0.1), MaterialConstants::gold_ior())) };
-        let material = Material { material_impl: Box::new(MetallicRoughnessBRDFMaterial::new(
-            Rc::new(f!(0.3)),
-            Rc::new(f!(1)),
-            Rc::new(new_vector3(1, 0.782, 0.344))))
+        let checkerboard: Rc<dyn Texture2DTrait<F>> = Rc::new(CheckerboardTexture::new(f!(0.07)));
+        let material = Material {
+            material_impl: Box::new(MetallicRoughnessBRDFMaterial::new(
+                Rc::new(f!(0.3)),
+                // Rc::new(Texture2DNode::new(checkerboard)),
+                Rc::new(f!(1)),
+                // Rc::new(new_vector3(1, 0.782, 0.344))
+                Rc::new(Texture2DNode::new(checkerboard))
+            )),
         };
         game_object.add_component_owned(material);
     }
@@ -191,48 +197,46 @@ fn main_with_type<F>() -> Result<()> where F: BaseFloat + 'static {
         Euler::new(Deg(f!(0.0)), Deg(f!(0.0)), Deg(f!(0.0))).into()
     );
 
-    let uv_renderer = TexcoordsRenderer::new(0);
-    let image = uv_renderer.render(&scene, 300, 300, &camera, &camera_transform);
+    // let uv_renderer = TexcoordsRenderer::new(0);
+    // let image = uv_renderer.render(&scene, 300, 300, &camera, &camera_transform);
 
-    // let size = 300;
-    // let mut image = RgbImage::new(size as u32, size as u32);
-    //
-    // let pixel_size_x = F::one() / F::from(size).unwrap();
-    // let pixel_size_y = F::one() / F::from(size).unwrap();
-    // let sampler: UniformSampler<F> = UniformSampler::new();
-    // let h = F::from(0.5).unwrap();
-    // let mut tracing_service = TracingService::new(&scene);
-    // let spp = 3;
-    // let pb = ProgressBar::new((size * size) as u64);
-    // for x in 0..size {
-    //     for y in 0..size {
-    //         let mut total_value = Vector3::zero();
-    //
-    //         for _sample_iter in 0..spp {
-    //             let sample = sampler.sample_2d();
-    //             let offset_x = sample.x - h;
-    //             let offset_y = sample.y - h;
-    //
-    //             let pixel_center_x = (h + F::from(x).unwrap() + offset_x) * pixel_size_x;
-    //             let pixel_center_y = (h + F::from(y).unwrap() + offset_y) * pixel_size_y;
-    //             let pixel_center = Vector2::new(pixel_center_x, pixel_center_y);
-    //             let ray = camera.get_ray_world_space(pixel_center, &camera_transform);
-    //
-    //             let pixel = SimplePathTracing::shade_one_ray(&mut tracing_service, &ray, 5, (x, y))?;
-    //
-    //             total_value += pixel;
-    //         }
-    //
-    //         pb.inc(1);
-    //
-    //         let pixel = total_value / F::from(spp).unwrap();
-    //         image.put_pixel(x as u32, size as u32 - 1 - y as u32, vector3_to_rgb_clamped(pixel));
-    //     }
-    // }
-    //
-    // // let image = SimplePathTracing::trace(&scene, 5, size, size, &camera, &camera_transform);
-    // // let image = ShadeNormal::shade_normal(&scene, size, size, &camera, &camera_transform);
-    // pb.finish();
+    let size = 300;
+    let mut image = RgbImage::new(size as u32, size as u32);
+
+    let pixel_size_x = F::one() / F::from(size).unwrap();
+    let pixel_size_y = F::one() / F::from(size).unwrap();
+    let sampler: UniformSampler<F> = UniformSampler::new();
+    let h = F::from(0.5).unwrap();
+    let mut tracing_service = TracingService::new(&scene);
+    let spp = 64;
+    let pb = ProgressBar::new((size * size) as u64);
+    for x in 0..size {
+        for y in 0..size {
+            let mut total_value = Vector3::zero();
+
+            for _sample_iter in 0..spp {
+                let sample = sampler.sample_2d();
+                let offset_x = sample.x - h;
+                let offset_y = sample.y - h;
+
+                let pixel_center_x = (h + F::from(x).unwrap() + offset_x) * pixel_size_x;
+                let pixel_center_y = (h + F::from(y).unwrap() + offset_y) * pixel_size_y;
+                let pixel_center = Vector2::new(pixel_center_x, pixel_center_y);
+                let ray = camera.get_ray_world_space(pixel_center, &camera_transform);
+
+                let pixel = SimplePathTracing::shade_one_ray(&mut tracing_service, &ray, 5, (x, y))?;
+
+                total_value += pixel;
+            }
+
+            pb.inc(1);
+
+            let pixel = total_value / F::from(spp).unwrap();
+            image.put_pixel(x as u32, size as u32 - 1 - y as u32, vector3_to_rgb_clamped(pixel));
+        }
+    }
+
+    pb.finish();
     image.save("trace.png")?;
 
     Ok(())
