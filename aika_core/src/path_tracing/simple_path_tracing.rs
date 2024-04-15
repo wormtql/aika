@@ -244,7 +244,7 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
 
         for (ray, (i, j)) in camera.iter_ray(&camera_transform, width, height) {
             let mut sum = Vector3::zero();
-            let spp = 1024;
+            let spp = 3;
             for k in 0..spp {
                 let color = SimplePathTracing::shade_one_ray(&mut tracing_service, &ray, depth, (i, j)).unwrap();
                 // println!("{:?}", color.div_element_wise(pdf));

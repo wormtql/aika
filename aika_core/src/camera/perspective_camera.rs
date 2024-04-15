@@ -1,9 +1,10 @@
-use cgmath::{BaseFloat, Matrix4, Rad, Vector3};
+use cgmath::{BaseFloat, Matrix4, Rad, Rotation, Vector2, Vector3};
 use num_traits::Zero;
 use aika_math::Ray;
 use crate::component::Transform;
 
-/// we assume, initial, the camera is looking at (0, 0, -1), with right hand coordinate system
+/// we assume, initial, the camera is looking at (0, 0, -1) (-z), with right hand coordinate system
+/// and the up vector in (0, 1, 0) (+y)
 pub struct PerspectiveCamera<F> {
     /// vertical foc, in rad
     pub fovy: F,
@@ -32,6 +33,32 @@ impl<F> PerspectiveCamera<F> where F: BaseFloat {
 
     pub fn get_projection_matrix(&self) -> Matrix4<F> {
         cgmath::perspective(FToRad { value: self.fovy }, self.aspect, self.near, self.far)
+    }
+
+    pub fn get_ray_camera_space(&self, uv: Vector2<F>) -> Ray<F> {
+        let half = F::from(0.5).unwrap();
+        let two = F::from(2).unwrap();
+        let one = F::one();
+
+        // width of the image plane
+        let height = two * (self.fovy * half).tan();
+        let width = height * self.aspect;
+
+        let x = (uv[0] - half) * width;
+        let y = (uv[1] - half) * height;
+
+        let dir = Vector3::new(x, y, -one);
+
+        let ray = Ray::new(Vector3::zero(), dir);
+
+        ray
+    }
+
+    pub fn get_ray_world_space(&self, uv: Vector2<F>, transform: &Transform<F>) -> Ray<F> {
+        let ray_camera_space = self.get_ray_camera_space(uv);
+        let new_origin = ray_camera_space.origin + transform.position;
+        let new_dir = transform.rotation.rotate_vector(ray_camera_space.direction);
+        Ray::new(new_origin, new_dir)
     }
 
     pub fn iter_ray<'a>(&'a self, camera_transform: &'a Transform<F>, width: usize, height: usize) -> PerspectiveCameraRayIterator<'a, F> {

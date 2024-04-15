@@ -159,9 +159,9 @@ pub fn refract<F: BaseFloat>(v: Vector3<F>, axis: Vector3<F>, ior_normal: F, ior
 
 pub fn reflect_bias<F: BaseFloat>(wi: Vector3<F>) -> Vector3<F> {
     if wi.z > F::zero() {
-        Vector3::new(F::zero(), F::zero(), F::from(1e-3).unwrap())
+        Vector3::new(F::zero(), F::zero(), F::from(1e-6).unwrap())
     } else {
-        Vector3::new(F::zero(), F::zero(), F::from(-1e-3).unwrap())
+        Vector3::new(F::zero(), F::zero(), F::from(-1e-6).unwrap())
     }
 }
 

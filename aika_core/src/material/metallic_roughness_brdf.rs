@@ -1,8 +1,10 @@
+use std::rc::Rc;
 use cgmath::{BaseFloat, ElementWise, InnerSpace, Vector3};
 use aika_math::distribution::IsotropicGGXDistribution;
 use aika_math::utils::{average_vector3_value, fresnel_schlick_approximate, get_2pi, get_pi, is_same_hemisphere_canonical, lerp_vector3, max_component_value, new_vector3, reflect, reflect_bias, sample_uniform_hemisphere, scalar_sub_vector3, smith_g2_lagarde};
 use crate::f;
 use crate::material::{BSDF, BSDFSampleResult, MaterialTrait, VolumeTrait};
+use crate::material_graph::{MaterialGraphContext, OutputValue};
 use crate::path_tracing::{ShadingContext, TracingService};
 
 pub struct MetallicRoughnessBRDF<F> {
@@ -23,8 +25,12 @@ impl<F> MetallicRoughnessBRDF<F> where F: BaseFloat {
 
 impl<F> BSDF<F> for MetallicRoughnessBRDF<F> where F: BaseFloat + 'static {
     fn evaluate(&self, wi: Vector3<F>, wo: Vector3<F>) -> Option<Vector3<F>> {
-        assert!(wi.z > F::zero());
-        assert!(wo.z > F::zero());
+        if wi.z <= F::zero() || wo.z <= F::zero() {
+            println!("invalid brdf");
+            return None;
+        }
+        // assert!(wi.z > F::zero());
+        // assert!(wo.z > F::zero());
         let dist = IsotropicGGXDistribution::new(self.roughness);
         let wm = (wi + wo).normalize();
         let ndf = dist.evaluate(wm);
@@ -42,7 +48,11 @@ impl<F> BSDF<F> for MetallicRoughnessBRDF<F> where F: BaseFloat + 'static {
     }
 
     fn sample_ray(&self, service: &mut TracingService<F>, current_dir: Vector3<F>) -> Option<BSDFSampleResult<F>> {
-        assert!(current_dir.z > F::zero());
+        // assert!(current_dir.z > F::zero());
+        if current_dir.z <= F::zero() {
+            println!("invalid brdf");
+            return None;
+        }
 
         let dist = IsotropicGGXDistribution::new(self.roughness);
         let wo = current_dir;
@@ -95,15 +105,18 @@ impl<F> BSDF<F> for MetallicRoughnessBRDF<F> where F: BaseFloat + 'static {
 }
 
 pub struct MetallicRoughnessBRDFMaterial<F> {
-    pub f0: Vector3<F>,
-    pub roughness: F,
-    pub metallic: F,
+    pub color: Rc<dyn OutputValue<F, Vector3<F>>>,
+    pub roughness: Rc<dyn OutputValue<F, F>>,
+    pub metallic: Rc<dyn OutputValue<F, F>>,
+    // pub f0: Vector3<F>,
+    // pub roughness: F,
+    // pub metallic: F,
 }
 
 impl<F: BaseFloat> MetallicRoughnessBRDFMaterial<F> {
-    pub fn new(roughness: F, metallic: F, f0: Vector3<F>) -> Self {
+    pub fn new(roughness: Rc<dyn OutputValue<F, F>>, metallic: Rc<dyn OutputValue<F, F>>, color: Rc<dyn OutputValue<F, Vector3<F>>>) -> Self {
         MetallicRoughnessBRDFMaterial {
-            f0,
+            color,
             roughness,
             metallic
         }
@@ -120,7 +133,13 @@ impl<F> MaterialTrait<F> for MetallicRoughnessBRDFMaterial<F> where F: BaseFloat
     }
 
     fn get_bsdf(&self, context: &ShadingContext<F>) -> Option<Box<dyn BSDF<F>>> {
-        Some(Box::new(MetallicRoughnessBRDF::new(self.roughness, self.metallic, self.f0)))
+        let material_graph_context = MaterialGraphContext {
+            uv: context.uv,
+        };
+        let roughness = self.roughness.get_value(&material_graph_context);
+        let metallic = self.roughness.get_value(&material_graph_context);
+        let color = self.color.get_value(&material_graph_context);
+        Some(Box::new(MetallicRoughnessBRDF::new(roughness, metallic, color)))
     }
 
     fn get_volume(&self) -> Option<Box<dyn VolumeTrait<F>>> {

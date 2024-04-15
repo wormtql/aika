@@ -11,3 +11,6 @@ pub mod camera;
 pub mod lighting;
 pub mod component;
 pub mod utils;
+pub mod texture;
+pub mod material_graph;
+pub mod renderer;

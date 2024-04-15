@@ -1,4 +1,4 @@
-use cgmath::{BaseFloat, Vector3};
+use cgmath::{BaseFloat, Vector2, Vector3};
 
 use crate::Ray;
 
@@ -6,6 +6,7 @@ use crate::Ray;
 pub struct HitRecord<T, H> {
     pub t: T,
     pub normal: Option<Vector3<T>>,
+    pub uv: Option<Vector2<T>>,
     pub back_facing: Option<bool>,
 
     pub hit_object: Option<H>
@@ -21,7 +22,8 @@ impl<T, H> HitRecord<T, H> where T: BaseFloat {
             t: T::infinity(),
             normal: None,
             back_facing: None,
-            hit_object: None
+            hit_object: None,
+            uv: None,
         }
     }
 

@@ -223,6 +223,7 @@ impl<F> Hittable<F, ()> for AABB<F> where F: BaseFloat {
                 normal: None,
                 back_facing: None,
                 hit_object: None,
+                uv: None,
             })
         } else {
             None

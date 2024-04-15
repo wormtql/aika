@@ -69,6 +69,7 @@ impl<F> Hittable<F, ()> for Sphere<F> where F: BaseFloat {
                     normal: Some(normal),
                     back_facing: Some(normal.dot(ray.direction) < F::zero()),
                     hit_object: None,
+                    uv: None,
                 })
             }
 

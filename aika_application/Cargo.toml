@@ -10,6 +10,8 @@ aika_core = { path = "../aika_core" }
 aika_math = { path = "../aika_math" }
 cgmath = { version = "0.18.0", features=["swizzle"] }
 anyhow = "1.0"
+image = "0.25.0"
+indicatif = "0.17.8"
 
 [[bin]]
 name = "diffuse_monkey"

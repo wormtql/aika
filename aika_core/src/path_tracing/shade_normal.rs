@@ -39,8 +39,10 @@ impl<F> ShadeNormal<F> where F: BaseFloat + 'static {
             let hit_triangle = r.hit_object.as_ref().unwrap().clone();
             let hit_point = r.get_hit_point(&ray);
             let uvw = hit_triangle.triangle.get_bary_centric_coordinate(hit_point);
-            // let interpolated_normal = hit_triangle.interpolate_normal(uvw).unwrap().normalize();
-            let interpolated_normal = hit_triangle.triangle.get_normal();
+            let interpolated_normal = hit_triangle.interpolate_normal(uvw).unwrap().normalize();
+            // let interpolated_normal = hit_triangle.triangle.get_normal();
+            // let interpolated_normal = hit_triangle.get_vertex_normal(0);
+            // let interpolated_normal = hit_triangle.get
             // println!("hit point1: {:?}", hit_point);
             interpolated_normal
 

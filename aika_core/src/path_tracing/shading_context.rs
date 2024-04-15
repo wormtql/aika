@@ -1,4 +1,4 @@
-use cgmath::{BaseFloat, Matrix, Matrix3, SquareMatrix, Vector3};
+use cgmath::{BaseFloat, Matrix, Matrix3, SquareMatrix, Vector2, Vector3};
 use num_traits::Zero;
 use crate::scene::GameObject;
 
@@ -16,6 +16,7 @@ pub struct ShadingContext<F> {
     /// points in to the surface
     pub ray_dir: Vector3<F>,
     pub point: Vector3<F>,
+    pub uv: Vector2<F>,
 
     /// ray dir in tangent space
     pub ray_dir_tangent_space: Vector3<F>,
@@ -48,6 +49,7 @@ impl<F> Default for ShadingContext<F> where F: BaseFloat {
             back_face: false,
             go_stack: Vec::new(),
             hit_point_stack: Vec::new(),
+            uv: Vector2::zero(),
         }
     }
 }

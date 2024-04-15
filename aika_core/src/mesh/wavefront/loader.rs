@@ -17,6 +17,13 @@ fn get_vec3<T, F>(buf: &[T], index: usize) -> Vector3<F> where T: Copy + ToPrimi
     )
 }
 
+fn get_vec2<T, F>(buf: &[T], index: usize) -> Vector2<F> where T: Copy + ToPrimitive, F: BaseFloat {
+    Vector2::new(
+        F::from(buf[2 * index]).unwrap(),
+        F::from(buf[2 * index + 1]).unwrap(),
+    )
+}
+
 impl WavefrontMeshLoader {
     fn parse_model<F>(model: &tobj::Model) -> Mesh<Vec<CommonVertex<F>>> where F: BaseFloat {
         let mut vertices: Vec<CommonVertex<F>> = Vec::new();
@@ -28,6 +35,9 @@ impl WavefrontMeshLoader {
             v.position = get_vec3::<_, F>(model.mesh.positions.as_slice(), i);
             if !model.mesh.normals.is_empty() {
                 v.normal = Some(get_vec3(&model.mesh.normals.as_slice(), i));
+            }
+            if !model.mesh.texcoords.is_empty() {
+                v.uv0 = Some(get_vec2(&model.mesh.texcoords.as_slice(), i));
             }
             vertices.push(v);
         }
@@ -109,6 +119,13 @@ impl WavefrontMeshLoader {
         Ok(result.into_iter().next().unwrap())
     }
 
+    pub fn sphere_smooth<F>() -> Result<Mesh<Vec<CommonVertex<F>>>> where F: BaseFloat {
+        let obj_file = include_bytes!("./sphere_smooth.obj");
+        let result = WavefrontMeshLoader::load_wavefront_obj_memory(obj_file.as_slice())?;
+
+        Ok(result.into_iter().next().unwrap())
+    }
+
     pub fn torus<F>() -> Result<Mesh<Vec<CommonVertex<F>>>> where F: BaseFloat {
         let obj_file = include_bytes!("./torus.obj");
         let result = WavefrontMeshLoader::load_wavefront_obj_memory(obj_file.as_slice())?;
@@ -118,6 +135,13 @@ impl WavefrontMeshLoader {
 
     pub fn beveled_cube<F>() -> Result<Mesh<Vec<CommonVertex<F>>>> where F: BaseFloat {
         let obj_file = include_bytes!("./cube.obj");
+        let result = WavefrontMeshLoader::load_wavefront_obj_memory(obj_file.as_slice())?;
+
+        Ok(result.into_iter().next().unwrap())
+    }
+
+    pub fn lucy<F>() -> Result<Mesh<Vec<CommonVertex<F>>>> where F: BaseFloat {
+        let obj_file = include_bytes!("./lucy.obj");
         let result = WavefrontMeshLoader::load_wavefront_obj_memory(obj_file.as_slice())?;
 
         Ok(result.into_iter().next().unwrap())

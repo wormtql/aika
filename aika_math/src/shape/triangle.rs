@@ -147,7 +147,8 @@ impl<F> Hittable<F, ()> for Triangle<F> where F: BaseFloat + 'static {
             t,
             normal: Some(n),
             back_facing: Some(n.dot(ray.direction) > F::zero()),
-            hit_object: None
+            hit_object: None,
+            uv: None,
         })
 
         // let dn = ray.direction.dot(n);

@@ -40,6 +40,8 @@ dependencies = [
  "aika_math",
  "anyhow",
  "cgmath",
+ "image",
+ "indicatif",
 ]
 
 [[package]]

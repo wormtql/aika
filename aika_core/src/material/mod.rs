@@ -25,3 +25,4 @@ mod constants;
 mod uniform_emit;
 mod rough_dielectric_bsdf;
 mod metallic_roughness_brdf;
+mod input_type;
