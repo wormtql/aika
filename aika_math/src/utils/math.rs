@@ -299,3 +299,30 @@ where
     }
 }
 
+/// Construct a rotation matrix that rotate a vector from f to t
+/// See PBRT book https://pbr-book.org/4ed/Geometry_and_Transformations/Transformations
+pub fn rotate_from_to<F: BaseFloat>(f: Vector3<F>, t: Vector3<F>) -> Matrix3<F> {
+    let h = F::from(0.72).unwrap();
+    let refl = if f.x.abs() < h && t.x.abs() < h {
+        Vector3::unit_x()
+    } else if f.y.abs() < h && t.y.abs() < h {
+        Vector3::unit_y()
+    } else {
+        Vector3::unit_z()
+    };
+    let mut mat = Matrix3::zero();
+    let u = refl - f;
+    let v = refl - t;
+    for i in 0..3 {
+        for j in 0..3 {
+            let two = F::from(2).unwrap();
+            let four = F::from(4).unwrap();
+            mat[i][j] = if i == j { F::one() } else { F::zero() } -
+                two / u.dot(u) * u[i] * u[j] -
+                two / v.dot(v) * v[i] * v[j] +
+                four * u.dot(v) / (u.dot(u) * v.dot(v)) * v[i] * u[j];
+        }
+    }
+
+    mat
+}

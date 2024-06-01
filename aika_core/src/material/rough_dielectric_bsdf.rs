@@ -94,7 +94,7 @@ impl<F> RoughDielectricBSDF<F> where F: BaseFloat + 'static {
             let ndf = self.ndf.evaluate(wm);
             let lar = smith_g2_lagarde(wi, wo, self.roughness);
             let cos_theta_i_abs = wi.z.abs();
-            let mut weight = f!(4) * lar * cos_theta_i_abs * wm.dot(wo).abs() * ndf / pdf_wm;
+            let weight = f!(4) * lar * cos_theta_i_abs * wm.dot(wo).abs() * ndf / pdf_wm;
             // if backface {
             //     weight = weight / (eta * eta);
             // } else {
@@ -152,7 +152,7 @@ impl<F> BSDF<F> for RoughDielectricBSDF<F> where F: BaseFloat + 'static {
             let vertical_component_sqr = sqr(wi_dot_wm + etap * wo_dot_wm);
             let transmit = F::one() - fresnel;
             let ndf = self.ndf.evaluate(wm);
-            let mut btdf = transmit * f!(4) * lar * ndf * wi_dot_wm.abs() * wo_dot_wm.abs() * etap * etap / vertical_component_sqr;
+            let btdf = transmit * f!(4) * lar * ndf * wi_dot_wm.abs() * wo_dot_wm.abs() * etap * etap / vertical_component_sqr;
             // if wi.z > F::zero() {
             //     btdf = btdf * (eta * eta);
             // } else {

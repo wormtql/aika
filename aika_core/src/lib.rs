@@ -1,6 +1,7 @@
 #![feature(decl_macro)]
 #![allow(unused_imports)]
 #![allow(unused_variables)]
+#![allow(dead_code)]
 
 pub mod material;
 pub mod path_tracing;

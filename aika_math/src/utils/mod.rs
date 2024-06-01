@@ -10,3 +10,5 @@ mod material;
 mod float_utils;
 #[cfg(test)]
 mod test_float_utils;
+#[cfg(test)]
+mod test_math;

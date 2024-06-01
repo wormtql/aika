@@ -3,6 +3,7 @@ use cgmath::{BaseFloat, InnerSpace, Vector3};
 use num_traits::clamp;
 use crate::utils::{get_float_sign, get_vector3_one, get_vector3_zero};
 
+/// Octagon encoded unit vectors
 /// F: Float type
 /// D: Storage type, can be u16 for quantized float storage, or f32/f64 for regular float types
 pub struct OctahedralVector<F, D> {
