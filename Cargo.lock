@@ -22,17 +22,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aika"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "cgmath",
- "num-derive",
- "num-traits",
- "smallvec",
-]
-
-[[package]]
 name = "aika_application"
 version = "0.1.0"
 dependencies = [

@@ -113,7 +113,7 @@ impl<F> IsotropicGGXDistribution<F> where F: BaseFloat {
         let pz = (one - length_2).max(F::zero()).sqrt();
         let nh = t1 * p.x + t2 * p.y + wh * pz;
 
-        let mut n = Vector3::new(self.roughness * nh.x, self.roughness * nh.y, nh.z.max(F::from(1e-6).unwrap())).normalize();
+        let n = Vector3::new(self.roughness * nh.x, self.roughness * nh.y, nh.z.max(F::from(1e-6).unwrap())).normalize();
         // if backface {
         //     n = -n;
         // }

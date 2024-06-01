@@ -73,7 +73,7 @@ fn main_with_type<F>() -> Result<()> where F: BaseFloat + 'static {
     );
 
     let size = 300;
-    let image = SimplePathTracing::trace(&scene, size, size, &camera, &camera_transform);
+    let image = SimplePathTracing::trace(&scene, 3, size, size, &camera, &camera_transform);
     // let image = ShadeNormal::shade_normal(&scene, size, size, &camera, &camera_transform);
     image.save("trace.png")?;
 

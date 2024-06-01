@@ -15,6 +15,7 @@ use indicatif::ProgressBar;
 use aika_math::utils::{get_vector3_one, is_same_hemisphere, visualize_unit_vector};
 use crate::f;
 use crate::path_tracing::shading_context::RayObjectStatus;
+use crate::utils::vector3_to_rgb_clamped;
 
 pub struct SimplePathTracing<F> {
     _phantom: PhantomData<F>
@@ -25,24 +26,10 @@ fn float_to_u8<F>(f: F) -> u8 where F: BaseFloat {
     f.to_u8().unwrap()
 }
 
-fn vector3_to_rgb<F>(x: Vector3<F>) -> Rgb<u8> where F: BaseFloat {
-    let m = F::from(255).unwrap();
-    // let clamped_x = x.x.min(F::one()).max(F::zero());
-    // let clamped_y = x.y.min(F::one()).max(F::zero());
-    // let clamped_z = x.z.min(F::one()).max(F::zero());
-    // Rgb([float_to_u8(clamped_x * m), float_to_u8(clamped_y * m), float_to_u8(clamped_z * m)])
-    Rgb([float_to_u8(x.x * m), float_to_u8(x.y * m), float_to_u8(x.z * m)])
-}
-
 fn tone_mapping<F>(x: Vector3<F>) -> Vector3<F> where F: BaseFloat {
     let one = F::one();
     let o = Vector3::new(one, one, one);
     return x.div_element_wise(x + o);
-}
-
-fn dir_to_rgb<F>(x: Vector3<F>) -> Rgb<u8> where F: BaseFloat {
-    let half = F::from(0.5).unwrap();
-    vector3_to_rgb(x * half + Vector3::new(half, half, half))
 }
 
 impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
@@ -264,7 +251,7 @@ impl<F> SimplePathTracing<F> where F: BaseFloat + 'static {
             let color = sum / F::from(spp).unwrap();
             // let tone_mapped_color = tone_mapping(color);
             // println!("{:?}", tone_mapped_color);
-            let rgb = vector3_to_rgb(color);
+            let rgb = vector3_to_rgb_clamped(color);
             // println!("{:?}", rgb);
             result.put_pixel(i as u32, height as u32 - 1 - j as u32, rgb);
 

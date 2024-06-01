@@ -1,6 +1,8 @@
+use std::any::TypeId;
 use std::f64::consts::PI;
+use std::mem::size_of;
 use cgmath::{BaseFloat, InnerSpace, Matrix, Matrix3, SquareMatrix, Vector3};
-use num_traits::{NumCast, ToPrimitive};
+use num_traits::{NumCast, ToPrimitive, Zero};
 
 pub fn get_pi<F: BaseFloat>() -> F {
     F::from(PI).unwrap()
@@ -68,12 +70,6 @@ pub fn permute_vector3<F>(x: Vector3<F>, kx: usize, ky: usize, kz: usize) -> Vec
     Vector3::new(x[kx], x[ky], x[kz])
 }
 
-struct FMAHelper<F> {
-    a: F,
-    b: F,
-    c: F
-}
-
 pub fn fma<F>(a: F, b: F, c: F) -> F where F: BaseFloat {
     // let a = a.to_f64().unwrap();
     // let b = b.to_f64().unwrap();
@@ -131,7 +127,7 @@ pub fn refract<F: BaseFloat>(v: Vector3<F>, axis: Vector3<F>, ior_normal: F, ior
     let mut cos_theta_i = v.dot(axis);
     let mut eta = ior_neg_normal / ior_normal;
     let mut axis = axis;
-    let mut v = v;
+    // let mut v = v;
     let backface = cos_theta_i < F::zero();
 
     if backface {
@@ -281,6 +277,25 @@ pub fn min_vector3<F: BaseFloat>(a: Vector3<F>, b: Vector3<F>) -> Vector3<F> {
     )
 }
 
+/// Get a vector3 with type F, and all components 1
 pub fn get_vector3_one<F: BaseFloat>() -> Vector3<F> {
     Vector3::new(F::one(), F::one(), F::one())
 }
+
+pub fn get_vector3_zero<F: BaseFloat>() -> Vector3<F> {
+    Vector3::zero()
+}
+
+/// Cast from type F to type T, they must have the same size
+pub fn type_cast_same_size<F, T>(value: F) -> T
+where
+    F: Copy,
+    T: Copy
+{
+    assert_eq!(size_of::<F>(), size_of::<T>());
+    unsafe {
+        let ptr = &value as *const F as *const T;
+        *ptr
+    }
+}
+

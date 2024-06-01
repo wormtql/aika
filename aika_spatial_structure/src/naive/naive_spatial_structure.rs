@@ -38,7 +38,7 @@ where
         let mut max = max;
         let mut hr: HitRecord<F, Rc<G>> = HitRecord::new();
         let mut is_hit = false;
-        for (index, item) in self.items.iter().enumerate() {
+        for (_index, item) in self.items.iter().enumerate() {
             let hit_result = item.hit(&ray, min, max);
             if let Some(r) = hit_result {
                 max = r.t;
