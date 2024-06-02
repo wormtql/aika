@@ -1,0 +1,4 @@
+// todo
+pub struct PiecewiseLinearSpectrum {
+
+}

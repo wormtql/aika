@@ -18,3 +18,4 @@ image = "0.25.0"
 tobj = { version = "4.0", features = ["merging"] }
 indicatif = "0.17.8"
 rand_chacha = "0.3.1"
+lazy_static = "1.4.0"

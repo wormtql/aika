@@ -43,6 +43,7 @@ dependencies = [
  "cgmath",
  "image",
  "indicatif",
+ "lazy_static",
  "num-derive",
  "num-traits",
  "rand",
