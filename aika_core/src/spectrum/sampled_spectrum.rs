@@ -6,6 +6,7 @@ use crate::spectrum::spectrum_utils::SpectrumUtils;
 
 pub const SAMPLE_COUNT: usize = 4;
 
+/// The sampled spectrum, only contains wavelength, pdf is saved in other place
 #[derive(Copy, Eq, PartialEq, Clone, Hash)]
 pub struct SampledSpectrum<F> {
     pub values: [F; SAMPLE_COUNT],
@@ -42,6 +43,7 @@ impl<F: BaseFloat> SampledSpectrum<F> {
         SampledSpectrum::new(values)
     }
 
+    /// Convert the sampled spectrum to XYZ color space using monte carlo integration
     pub fn to_xyz(&self, sampled_wavelengths: &SampledWavelength<F, F>) -> XYZ<F> {
         let mut result = [F::zero(); 3];
         let wavelengths_usize = sampled_wavelengths.to_usize();
