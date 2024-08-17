@@ -1,7 +1,8 @@
 use std::any::TypeId;
 use std::ops::{Add, Div, Index, Mul, Sub};
 use cgmath::BaseFloat;
-use crate::spectrum::{CIE_X_RAW_F32, CIE_X_RAW_F64, CIE_Y_INTEGRAL_F32, SampledWavelength, XYZ};
+use crate::spectrum::{CIE_X_RAW_F32, CIE_X_RAW_F64, CIE_Y_INTEGRAL_F32, RGB, SampledWavelength, XYZ};
+use crate::spectrum::rgb_color_space::RGBColorSpace;
 use crate::spectrum::spectrum_utils::SpectrumUtils;
 
 pub const SAMPLE_COUNT: usize = 4;
@@ -42,7 +43,9 @@ impl<F: BaseFloat> SampledSpectrum<F> {
         SampledSpectrum::new(values)
     }
 
-    pub fn to_xyz(&self, sampled_wavelengths: &SampledWavelength<F, F>) -> XYZ<F> {
+    /// Convert sampled spectrum to XYZ
+    /// Since the spectrum contains only samples, we need to use Monte Carlo integration to estimate the XYZ value
+    pub fn to_XYZ(&self, sampled_wavelengths: &SampledWavelength<F, F>) -> XYZ<F> {
         let mut result = [F::zero(); 3];
         let wavelengths_usize = sampled_wavelengths.to_usize();
 
@@ -61,6 +64,12 @@ impl<F: BaseFloat> SampledSpectrum<F> {
         }
 
         XYZ::new(result[0], result[1], result[2])
+    }
+
+    pub fn to_RGB(&self, sampled_wavelengths: &SampledWavelength<F, F>, rgb_color_space: &RGBColorSpace<F>) -> RGB<F> {
+        let xyz = self.to_XYZ(sampled_wavelengths);
+        let rgb = rgb_color_space.XYZ_to_RGB(xyz);
+        rgb
     }
 }
 

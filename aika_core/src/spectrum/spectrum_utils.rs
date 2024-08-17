@@ -33,7 +33,8 @@ impl<F: BaseFloat> SpectrumUtils<F> {
         integral
     }
 
-    pub fn spectrum_to_xyz<S: Spectrum<F>>(s: &S) -> XYZ<F> {
+    /// Because XYZ is different from xyz, the naming convention is violated here
+    pub fn spectrum_to_XYZ<S: Spectrum<F>>(s: &S) -> XYZ<F> {
         let x = Self::inner_product_spectrum_and_arr(s, &CIE_X_RAW_F32);
         let y = Self::inner_product_spectrum_and_arr(s, &CIE_Y_RAW_F32);
         let z = Self::inner_product_spectrum_and_arr(s, &CIE_Z_RAW_F32);

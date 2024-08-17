@@ -4,6 +4,7 @@ pub use densely_sampled_spectrum::DenselySampledSpectrum;
 pub use sampled_spectrum::{SampledSpectrum, SAMPLE_COUNT};
 pub use sampled_wavelength::SampledWavelength;
 pub use xyz::XYZ;
+pub use rgb::RGB;
 pub use constants::*;
 
 mod traits;
@@ -18,3 +19,6 @@ mod xyz;
 mod constants;
 #[cfg(test)]
 mod test_spectrum;
+mod rgb_color_space;
+mod rgb;
+
