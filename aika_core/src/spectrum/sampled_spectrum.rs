@@ -7,6 +7,7 @@ use crate::spectrum::spectrum_utils::SpectrumUtils;
 
 pub const SAMPLE_COUNT: usize = 4;
 
+/// The sampled spectrum, only contains wavelength, pdf is saved in other place
 #[derive(Copy, Eq, PartialEq, Clone, Hash)]
 pub struct SampledSpectrum<F> {
     pub values: [F; SAMPLE_COUNT],
@@ -43,7 +44,7 @@ impl<F: BaseFloat> SampledSpectrum<F> {
         SampledSpectrum::new(values)
     }
 
-    /// Convert sampled spectrum to XYZ
+    /// Convert sampled spectrum to XYZ using monte carlo integration
     /// Since the spectrum contains only samples, we need to use Monte Carlo integration to estimate the XYZ value
     pub fn to_XYZ(&self, sampled_wavelengths: &SampledWavelength<F, F>) -> XYZ<F> {
         let mut result = [F::zero(); 3];

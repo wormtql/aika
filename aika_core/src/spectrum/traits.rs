@@ -6,6 +6,7 @@ pub const MIN_LAMBDA: usize = 360;
 /// Maximum visible light wavelength
 pub const MAX_LAMBDA: usize = 830;
 
+/// The trait for the spectrum
 pub trait Spectrum<F: BaseFloat> {
     /// Get the SPD value given a wavelength in nm
     /// The returned value may be in any physical unit, for example radiance or irradiance
